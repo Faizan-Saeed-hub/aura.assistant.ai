@@ -31,7 +31,35 @@ function initVoiceToggleUI() {
 }
 
 // --- Event Binding ---
+function closeMobileSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const backdrop = document.getElementById("sidebar-backdrop");
+  if (sidebar) sidebar.classList.remove("mobile-open");
+  if (backdrop) backdrop.classList.remove("active");
+}
+
 function bindEvents() {
+  // Mobile Hamburger Menu & Drawer
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+  const mobileCloseBtn = document.getElementById("mobile-sidebar-close-btn");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  const sidebar = document.getElementById("sidebar");
+
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener("click", () => {
+      if (sidebar) sidebar.classList.add("mobile-open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.add("active");
+    });
+  }
+
+  if (mobileCloseBtn) {
+    mobileCloseBtn.addEventListener("click", closeMobileSidebar);
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener("click", closeMobileSidebar);
+  }
+
   // Window Controls (Red, Yellow, Green Dots)
   const winCloseBtn = document.getElementById("win-close-btn");
   if (winCloseBtn) {
@@ -627,6 +655,7 @@ function setupModal(triggerId, modalId, onLoad) {
   const trigger = document.getElementById(triggerId);
   if (trigger) {
     trigger.addEventListener("click", () => {
+      closeMobileSidebar();
       document.getElementById(modalId).classList.add("open");
       if (onLoad) onLoad();
     });
@@ -638,6 +667,7 @@ function closeModal(modalId) {
 }
 
 function switchView(view) {
+  closeMobileSidebar();
   activeView = view;
   const dashEl = document.getElementById("dashboard-view");
   const chatEl = document.getElementById("chat-view");

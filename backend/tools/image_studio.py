@@ -1,4 +1,6 @@
 import os
+import io
+import base64
 import uuid
 import urllib.parse
 from typing import Dict, Any, Optional
@@ -209,7 +211,6 @@ def replace_image_background(
         # 2. Smart perimeter-connected segmentation
         if processed_img is None:
             import numpy as np
-            from scipy import ndimage
 
             rgb_img = img.convert("RGB")
             arr = np.array(rgb_img).astype(np.float32)
@@ -243,19 +244,50 @@ def replace_image_background(
             cand_mask = (norm_dist <= float(tolerance))
 
             # Border-connected component filtering: Only pixels connected to the outer edges count as background
-            labeled, num_features = ndimage.label(cand_mask)
-            if num_features > 0:
-                border_labels = set(np.concatenate([
-                    labeled[0, :],              # Top row
-                    labeled[:, 0],              # Left column
-                    labeled[:, -1],             # Right column
-                    labeled[max(0, h-5):, 0],   # Bottom left
-                    labeled[max(0, h-5):, -1]   # Bottom right
-                ]))
-                border_labels.discard(0)
-                bg_connected = np.isin(labeled, list(border_labels))
-            else:
-                bg_connected = cand_mask
+            bg_connected = None
+            try:
+                from scipy import ndimage
+                labeled, num_features = ndimage.label(cand_mask)
+                if num_features > 0:
+                    border_labels = set(np.concatenate([
+                        labeled[0, :],              # Top row
+                        labeled[:, 0],              # Left column
+                        labeled[:, -1],             # Right column
+                        labeled[max(0, h-5):, 0],   # Bottom left
+                        labeled[max(0, h-5):, -1]   # Bottom right
+                    ]))
+                    border_labels.discard(0)
+                    if border_labels:
+                        bg_connected = np.isin(labeled, list(border_labels))
+            except Exception:
+                bg_connected = None
+
+            # Resilient pure Python/NumPy BFS fallback if scipy is not installed in cloud
+            if bg_connected is None:
+                from collections import deque
+                visited = np.zeros((h, w), dtype=bool)
+                queue = deque()
+                # Seeds from top, left, right borders
+                for x in range(w):
+                    if cand_mask[0, x] and not visited[0, x]:
+                        visited[0, x] = True
+                        queue.append((0, x))
+                for y in range(h):
+                    if cand_mask[y, 0] and not visited[y, 0]:
+                        visited[y, 0] = True
+                        queue.append((y, 0))
+                    if cand_mask[y, w - 1] and not visited[y, w - 1]:
+                        visited[y, w - 1] = True
+                        queue.append((y, w - 1))
+                while queue:
+                    cy, cx = queue.popleft()
+                    for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                        ny, nx = cy + dy, cx + dx
+                        if 0 <= ny < h and 0 <= nx < w:
+                            if not visited[ny, nx] and cand_mask[ny, nx]:
+                                visited[ny, nx] = True
+                                queue.append((ny, nx))
+                bg_connected = visited if np.any(visited) else cand_mask
 
             # Soft transition alpha (0 = background, 1 = foreground subject)
             f_range = max(1.0, float(tolerance * 0.35))

@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- Marked.js for fast Markdown formatting and image rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link rel="stylesheet" href="/static/css/style.css?v=2.2" />
+  <link rel="stylesheet" href="/static/css/style.css?v=3.0" />
 </head>
 <body>
   <!-- Top Category Tags (matching reference style) -->
@@ -32,6 +32,11 @@
   <div class="window-frame">
     <!-- Window Header / Browser Chrome -->
     <div class="window-header">
+      <!-- Mobile Hamburger Menu Button -->
+      <button class="win-btn-icon mobile-hamburger-btn" id="mobile-menu-btn" title="Open Navigation Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
       <div class="window-controls">
         <span class="control-dot close" id="win-close-btn" title="Close / Return to Dashboard"></span>
         <span class="control-dot minimize" id="win-minimize-btn" title="Minimize / Toggle Sidebar"></span>
@@ -68,8 +73,22 @@
 
     <!-- App Body: Sidebar + Main Content -->
     <div class="app-body">
+      <!-- Mobile Backdrop Overlay -->
+      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
       <!-- Left Sidebar -->
       <aside class="sidebar" id="sidebar">
+        <!-- Mobile Sidebar Close Header -->
+        <div class="mobile-sidebar-header">
+          <div class="mobile-sidebar-brand">
+            <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+            <span>Aura AI</span>
+          </div>
+          <button type="button" class="btn-sidebar-mobile-close" id="mobile-sidebar-close-btn" title="Close Menu">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
         <!-- User Profile Card -->
         <div class="sidebar-user-card" id="sidebar-profile-card">
           <div class="user-avatar-group" id="open-profile-avatar-group" style="cursor: pointer;" title="Click to view profile or create account">
@@ -1403,6 +1422,6 @@
   <!-- Markdown Parser & Code Syntax Highlighting -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="/static/js/app.js?v=2.2"></script>
+  <script src="/static/js/app.js?v=3.0"></script>
 </body>
 </html>
