@@ -206,39 +206,77 @@ def replace_image_background(
                 # Fall back to smart color matting
                 pass
 
-        # 2. Smart perimeter color matting if processed_img not yet produced
+        # 2. Smart perimeter-connected segmentation
         if processed_img is None:
+            import numpy as np
+            from scipy import ndimage
+
             rgb_img = img.convert("RGB")
             arr = np.array(rgb_img).astype(np.float32)
 
             if not target_bg_color:
-                # Sample corners & top edges (typical passport / studio backdrop area)
-                corners = [
-                    arr[min(5, h-1), min(5, w-1)],
-                    arr[min(5, h-1), max(0, w-6)],
-                    arr[max(0, h-6), min(5, w-1)],
-                    arr[max(0, h-6), max(0, w-6)],
-                    arr[min(5, h-1), w // 2]
+                # Sample top margin and corners for reliable portrait backdrop detection
+                sample_rows = min(max(3, h // 20), h - 1)
+                top_strip = arr[0:sample_rows, :]
+                top_corners = [
+                    arr[0:sample_rows, 0:min(20, w)],
+                    arr[0:sample_rows, max(0, w-20):w]
                 ]
-                target_rgb = np.median(corners, axis=0)
+                samples = np.concatenate([top_strip.reshape(-1, 3), top_corners[0].reshape(-1, 3), top_corners[1].reshape(-1, 3)], axis=0)
+                target_rgb = np.median(samples, axis=0)
             else:
                 hex_c = target_bg_color.lstrip("#")
                 if len(hex_c) == 3:
                     hex_c = "".join(c * 2 for c in hex_c)
                 target_rgb = np.array([int(hex_c[i:i+2], 16) for i in (0, 2, 4)], dtype=np.float32)
 
-            dist = np.sqrt(np.sum((arr - target_rgb) ** 2, axis=2))
-            max_dist = np.sqrt(255**2 * 3)
-            norm_dist = (dist / max_dist) * 100.0
+            # Perceptual weighted color distance (sensitive to blue & green backdrops)
+            diff = arr - target_rgb
+            r_diff = diff[:, :, 0]
+            g_diff = diff[:, :, 1]
+            b_diff = diff[:, :, 2]
+            weighted_dist = np.sqrt(2.0 * (r_diff ** 2) + 4.0 * (g_diff ** 2) + 3.0 * (b_diff ** 2))
+            max_dist = np.sqrt(2.0 * 255**2 + 4.0 * 255**2 + 3.0 * 255**2)
+            norm_dist = (weighted_dist / max_dist) * 100.0
 
-            f_range = max(1.0, float(tolerance * 0.45))
+            # Match threshold for candidate background pixels
+            cand_mask = (norm_dist <= float(tolerance))
+
+            # Border-connected component filtering: Only pixels connected to the outer edges count as background
+            labeled, num_features = ndimage.label(cand_mask)
+            if num_features > 0:
+                border_labels = set(np.concatenate([
+                    labeled[0, :],              # Top row
+                    labeled[:, 0],              # Left column
+                    labeled[:, -1],             # Right column
+                    labeled[max(0, h-5):, 0],   # Bottom left
+                    labeled[max(0, h-5):, -1]   # Bottom right
+                ]))
+                border_labels.discard(0)
+                bg_connected = np.isin(labeled, list(border_labels))
+            else:
+                bg_connected = cand_mask
+
+            # Soft transition alpha (0 = background, 1 = foreground subject)
+            f_range = max(1.0, float(tolerance * 0.35))
             t_low = max(0.0, float(tolerance) - f_range)
             t_high = float(tolerance) + f_range
 
-            alpha = np.clip((norm_dist - t_low) / (t_high - t_low), 0.0, 1.0)
-            mask_img = Image.fromarray((alpha * 255).astype(np.uint8), mode="L")
+            color_alpha = np.clip((norm_dist - t_low) / (t_high - t_low), 0.0, 1.0)
+            final_alpha = np.where(bg_connected, color_alpha, 1.0)
+
+            mask_img = Image.fromarray((final_alpha * 255).astype(np.uint8), mode="L")
             if feather > 0:
                 mask_img = mask_img.filter(ImageFilter.GaussianBlur(radius=feather))
+
+            # Despill: suppress blue backdrop color bounce along the edge transition
+            edge_zone = (final_alpha > 0.05) & (final_alpha < 0.95)
+            if np.any(edge_zone):
+                if target_rgb[2] > target_rgb[0] and target_rgb[2] > target_rgb[1]:
+                    arr_copy = np.copy(arr)
+                    avg_rg = (arr_copy[:, :, 0] + arr_copy[:, :, 1]) / 2.0
+                    arr_copy[:, :, 2] = np.where(edge_zone, np.minimum(arr_copy[:, :, 2], avg_rg * 1.15), arr_copy[:, :, 2])
+                    rgb_img = Image.fromarray(np.clip(arr_copy, 0, 255).astype(np.uint8))
 
             if new_bg_color.lower() == "transparent":
                 processed_img = rgb_img.convert("RGBA")

@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- Marked.js for fast Markdown formatting and image rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/style.css?v=2.2" />
 </head>
 <body>
   <!-- Top Category Tags (matching reference style) -->
@@ -393,12 +393,22 @@
                 <div class="form-field">
                   <div class="label-split">
                     <label for="email-key-points">Key Points & Details to Include</label>
-                    <button type="button" class="btn-voice-dictate" id="email-voice-dictate-btn" title="Click to speak and dictate points via microphone (English or Roman Urdu)">
+                    <div class="email-voice-tools-row">
+                      <button type="button" class="btn-email-lang-toggle" id="email-voice-lang-toggle" title="Switch Dictation Language: Urdu (UR) / English (EN)">
+                        <span id="email-voice-lang-badge">UR</span>
+                      </button>
+                      <button type="button" class="btn-voice-dictate" id="email-voice-dictate-btn" title="Click to speak and dictate points via microphone (Urdu / English)">
+                        <i class="fa-solid fa-microphone"></i>
+                        <span id="email-dictate-label">Voice Dictate</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="textarea-with-mic-wrapper">
+                    <textarea id="email-key-points" class="clean-input" rows="4" placeholder="Type key points or click the microphone button to dictate in Urdu or English..."></textarea>
+                    <button type="button" class="btn-textarea-floating-mic" id="email-floating-mic-btn" title="Voice Dictation (Mic) — Click to speak">
                       <i class="fa-solid fa-microphone"></i>
-                      <span id="email-dictate-label">Voice Input</span>
                     </button>
                   </div>
-                  <textarea id="email-key-points" class="clean-input" rows="4" placeholder="Type key points or click 'Voice Input' to dictate in English or Roman Urdu..."></textarea>
                   <div class="field-meta-row">
                     <span class="dictate-status-text" id="email-dictate-status"></span>
                     <span class="char-count-text" id="email-key-points-count">0 words</span>
@@ -423,9 +433,23 @@
                 <div class="form-field" style="flex: 1; display: flex; flex-direction: column;">
                   <div class="label-split">
                     <label for="email-output-body">Email Body (Editable)</label>
+                    <div class="email-voice-tools-row">
+                      <button type="button" class="btn-voice-dictate" id="email-body-dictate-btn" title="Dictate directly into Email Body via microphone">
+                        <i class="fa-solid fa-microphone"></i>
+                        <span id="email-body-dictate-label">Dictate into Body</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="textarea-with-mic-wrapper" style="flex: 1; display: flex; flex-direction: column;">
+                    <textarea id="email-output-body" class="clean-input email-body-area" placeholder="Your formatted email will appear here... Feel free to edit directly or dictate using the mic."></textarea>
+                    <button type="button" class="btn-textarea-floating-mic" id="email-body-floating-mic-btn" title="Dictate into Email Body">
+                      <i class="fa-solid fa-microphone"></i>
+                    </button>
+                  </div>
+                  <div class="field-meta-row">
+                    <span class="dictate-status-text" id="email-body-dictate-status"></span>
                     <span class="char-count-text" id="email-body-count">0 words</span>
                   </div>
-                  <textarea id="email-output-body" class="clean-input email-body-area" placeholder="Your formatted email will appear here... Feel free to edit directly."></textarea>
                 </div>
 
                 <div class="email-actions-bar">
@@ -470,9 +494,8 @@
             </div>
 
             <div class="image-studio-workspace">
-              <!-- Left Controls Column -->
               <div class="studio-controls-panel">
-                <!-- Studio Tab Switcher: Framing vs Retouch -->
+                <!-- Studio Tab Switcher: Framing vs Retouch vs Photo Background -->
                 <div class="studio-tab-bar">
                   <button type="button" class="studio-tab-btn active" id="tab-studio-framing-btn">
                     <i class="fa-solid fa-crop-simple"></i> Framing & Sizing
@@ -481,7 +504,7 @@
                     <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ AI Face Glow & Retouch
                   </button>
                   <button type="button" class="studio-tab-btn" id="tab-studio-bg-btn">
-                    <i class="fa-solid fa-id-badge"></i> 🪄 Image Background (Passport)
+                    <i class="fa-solid fa-id-badge"></i> 🪄 Photo Background (Blue to White)
                   </button>
                 </div>
 
@@ -557,6 +580,35 @@
                       <button type="button" class="swatch-btn" data-color="#e11d48" style="background:#e11d48;" title="Crimson"></button>
                       <button type="button" class="swatch-btn" data-color="#fef08a" style="background:#fef08a;" title="Soft Yellow"></button>
                       <button type="button" class="swatch-btn" data-color="#bae6fd" style="background:#bae6fd;" title="Sky Blue"></button>
+                    </div>
+                  </div>
+
+                  <!-- Photo Subject Background Quick Replacer (Blue to White / Cutout) -->
+                  <div class="studio-photo-bg-box" id="row-photo-bg-quick">
+                    <div class="photo-bg-top">
+                      <span class="picker-title"><i class="fa-solid fa-wand-magic-sparkles text-amber"></i> Photo Subject Background</span>
+                      <span class="photo-bg-status-badge" id="photo-bg-status-badge"><i class="fa-solid fa-image"></i> Original</span>
+                    </div>
+                    <p class="photo-bg-desc">Turn blue or colored photo background into professional white with 1 click:</p>
+                    <div class="quick-photo-bg-buttons">
+                      <button type="button" class="btn-quick-photo-bg active" data-color="original" id="quick-photo-bg-orig" title="Keep original photo background">
+                        <i class="fa-solid fa-image"></i> Original
+                      </button>
+                      <button type="button" class="btn-quick-photo-bg" data-color="#ffffff" id="quick-photo-bg-white" title="Convert photo backdrop to Professional White (Passport/Corporate)">
+                        <span class="color-dot" style="background:#ffffff; border:1px solid #cbd5e1;"></span> White (Passport)
+                      </button>
+                      <button type="button" class="btn-quick-photo-bg" data-color="#f8fafc" id="quick-photo-bg-offwhite" title="Soft Off-White">
+                        <span class="color-dot" style="background:#f8fafc; border:1px solid #cbd5e1;"></span> Off-White
+                      </button>
+                      <button type="button" class="btn-quick-photo-bg" data-color="#2563eb" id="quick-photo-bg-blue" title="Passport Blue">
+                        <span class="color-dot" style="background:#2563eb;"></span> Blue
+                      </button>
+                      <button type="button" class="btn-quick-photo-bg" data-color="transparent" id="quick-photo-bg-trans" title="Transparent PNG cutout">
+                        <span class="color-dot transparent-dot"></span> Transparent
+                      </button>
+                      <button type="button" class="btn-quick-photo-bg-more" id="quick-photo-bg-more" title="Open full background tools with custom color picker & tolerance sliders">
+                        <i class="fa-solid fa-sliders"></i> Custom...
+                      </button>
                     </div>
                   </div>
 
@@ -701,6 +753,18 @@
 
                 <!-- PANEL 3: Photo Background Changer (Passport, Visa & Cutouts) -->
                 <div class="studio-subpanel" id="panel-studio-bg">
+                  <!-- 1-Click Professional White Banner -->
+                  <div class="photo-bg-quick-banner">
+                    <div class="banner-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div class="banner-text">
+                      <strong>Convert to Professional White</strong>
+                      <p>1-Click turns blue or studio backdrop into clean white (#FFFFFF) for passport, visa & LinkedIn.</p>
+                    </div>
+                    <button type="button" class="btn-banner-convert" id="btn-quick-convert-white">
+                      <i class="fa-solid fa-bolt"></i> Make White
+                    </button>
+                  </div>
+
                   <div class="bg-tool-header">
                     <h4><i class="fa-solid fa-id-badge text-primary"></i> Passport & Photo Background Changer</h4>
                     <p class="panel-desc">Change the photo's actual background (e.g. blue passport background to white) while keeping the person intact.</p>
@@ -714,9 +778,14 @@
                         <span class="target-color-chip" id="chip-target-color" style="background:#2563eb;" title="Current detected backdrop color"></span>
                         <span id="label-target-hex">#2563EB (Auto-Detected)</span>
                       </div>
-                      <button type="button" class="btn-tool-sm" id="btn-auto-detect-bg" title="Auto-detect from photo border">
-                        <i class="fa-solid fa-crosshairs"></i> Auto Detect
-                      </button>
+                      <div class="detect-actions-row">
+                        <button type="button" class="btn-tool-sm" id="btn-auto-detect-bg" title="Auto-detect from photo border">
+                          <i class="fa-solid fa-crosshairs"></i> Auto Detect
+                        </button>
+                        <button type="button" class="btn-tool-sm" id="btn-eyedropper-bg" title="Click anywhere on the photo preview to sample backdrop color">
+                          <i class="fa-solid fa-eye-dropper"></i> Pick from Photo
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -786,6 +855,9 @@
                     </button>
                     <button type="button" class="btn-secondary-pill full-width" id="btn-reset-image-bg" style="margin-top: 8px;">
                       <i class="fa-solid fa-rotate-left"></i> Revert to Original Photo
+                    </button>
+                    <button type="button" class="btn-compare-retouch full-width" id="btn-compare-bg" style="margin-top: 8px;">
+                      <i class="fa-solid fa-eye"></i> Hold to View Original Photo
                     </button>
                   </div>
                 </div>
@@ -1331,6 +1403,6 @@
   <!-- Markdown Parser & Code Syntax Highlighting -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v=2.2"></script>
 </body>
 </html>

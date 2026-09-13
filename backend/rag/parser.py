@@ -16,10 +16,11 @@ class DocumentParser:
             return DocumentParser._parse_pdf(path)
         elif ext == ".docx":
             return DocumentParser._parse_docx(path)
+        elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff"]:
+            return DocumentParser._parse_image(path)
         elif ext in [".txt", ".md", ".markdown", ".json", ".csv", ".py", ".js", ".html", ".css"]:
             return DocumentParser._parse_text(path)
         else:
-            # Fallback to plain text read
             return DocumentParser._parse_text(path)
 
     @staticmethod

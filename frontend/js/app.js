@@ -1348,31 +1348,11 @@ function initVoiceRecognition() {
   const langBadge = document.getElementById("voice-lang-badge");
   const langBtn = document.getElementById("voice-lang-toggle");
 
-  const updateLangUI = () => {
-    const isUr = speechLang.startsWith("ur");
-    if (langBadge) langBadge.textContent = isUr ? "UR" : "EN";
-    if (langBtn) {
-      langBtn.title = isUr 
-        ? "Language: Urdu / Roman Urdu (UR) — Click to switch to English" 
-        : "Language: English (EN) — Click to switch to Urdu / Roman Urdu";
-      langBtn.style.color = isUr ? "#059669" : "#2563eb";
-      langBtn.style.borderColor = isUr ? "#a7f3d0" : "#bfdbfe";
-      langBtn.style.background = isUr ? "#ecfdf5" : "#eff6ff";
-    }
-  };
-
-  updateLangUI();
+  updateVoiceLangUI();
 
   if (langBtn && !langBtn.dataset.bound) {
     langBtn.dataset.bound = "true";
-    langBtn.addEventListener("click", () => {
-      speechLang = speechLang.startsWith("ur") ? "en-US" : "ur-PK";
-      localStorage.setItem("aura_speech_lang", speechLang);
-      if (speechRecognizer) speechRecognizer.lang = speechLang;
-      updateLangUI();
-      const name = speechLang.startsWith("ur") ? "Urdu / Roman Urdu (UR)" : "English (EN)";
-      showToast(`🌐 Voice input language set to: ${name}`);
-    });
+    langBtn.addEventListener("click", toggleGlobalSpeechLang);
   }
 
   speechRecognizer.onstart = () => {
@@ -1385,6 +1365,13 @@ function initVoiceRecognition() {
   };
 
   speechRecognizer.onend = () => {
+    if (isRecording) {
+      // Auto-restart continuous listening so speech is never cut off by pause
+      try {
+        if (speechRecognizer) speechRecognizer.start();
+        return;
+      } catch (e) {}
+    }
     isRecording = false;
     micBtn.classList.remove("recording");
     micBtn.title = "Voice Dictation";
@@ -1394,9 +1381,9 @@ function initVoiceRecognition() {
   };
 
   speechRecognizer.onerror = (e) => {
-    isRecording = false;
-    micBtn.classList.remove("recording");
     if (e.error === "not-allowed") {
+      isRecording = false;
+      micBtn.classList.remove("recording");
       showToast("⚠️ Microphone access denied. Please allow microphone permissions in your browser.");
     } else if (e.error !== "no-speech") {
       console.warn("Speech recognition notice:", e.error);
@@ -1425,6 +1412,42 @@ function initVoiceRecognition() {
     }
     // STRICT REQUIREMENT: No auto-send! Dictation is written to text box, user sends manually.
   };
+}
+
+function updateVoiceLangUI() {
+  const isUr = speechLang.startsWith("ur");
+  const badges = [
+    document.getElementById("voice-lang-badge"),
+    document.getElementById("email-voice-lang-badge")
+  ];
+  badges.forEach((b) => {
+    if (b) b.textContent = isUr ? "UR" : "EN";
+  });
+
+  const btns = [
+    document.getElementById("voice-lang-toggle"),
+    document.getElementById("email-voice-lang-toggle")
+  ];
+  btns.forEach((btn) => {
+    if (btn) {
+      btn.title = isUr
+        ? "Language: Urdu / Roman Urdu (UR) — Click to switch to English"
+        : "Language: English (EN) — Click to switch to Urdu / Roman Urdu";
+      btn.style.color = isUr ? "#059669" : "#2563eb";
+      btn.style.borderColor = isUr ? "#a7f3d0" : "#bfdbfe";
+      btn.style.background = isUr ? "#ecfdf5" : "#eff6ff";
+    }
+  });
+}
+
+function toggleGlobalSpeechLang() {
+  speechLang = speechLang.startsWith("ur") ? "en-US" : "ur-PK";
+  localStorage.setItem("aura_speech_lang", speechLang);
+  if (speechRecognizer) speechRecognizer.lang = speechLang;
+  if (emailSpeechRecognition) emailSpeechRecognition.lang = speechLang;
+  updateVoiceLangUI();
+  const name = speechLang.startsWith("ur") ? "Urdu / Roman Urdu (UR)" : "English (EN)";
+  showToast(`🌐 Voice input language set to: ${name}`);
 }
 
 function stopVoiceRecording() {
@@ -1880,31 +1903,77 @@ function initEmailVoiceDictation() {
   const keyPointsEl = document.getElementById("email-key-points");
   const countEl = document.getElementById("email-key-points-count");
 
-  if (!btn) return;
+  const emailLangBtn = document.getElementById("email-voice-lang-toggle");
+  if (emailLangBtn && !emailLangBtn.dataset.bound) {
+    emailLangBtn.dataset.bound = "true";
+    emailLangBtn.addEventListener("click", toggleGlobalSpeechLang);
+  }
 
-  btn.addEventListener("click", () => {
+  const keyPointsBtn = document.getElementById("email-voice-dictate-btn");
+  const floatingMicBtn = document.getElementById("email-floating-mic-btn");
+  const bodyDictateBtn = document.getElementById("email-body-dictate-btn");
+  const bodyFloatingMicBtn = document.getElementById("email-body-floating-mic-btn");
+
+  const stopEmailDictation = () => {
+    isEmailDictating = false;
+    activeEmailTarget = null;
+    if (emailSpeechRecognition) {
+      try { emailSpeechRecognition.abort(); } catch (e) {
+        try { emailSpeechRecognition.stop(); } catch (e2) {}
+      }
+    }
+    [keyPointsBtn, floatingMicBtn, bodyDictateBtn, bodyFloatingMicBtn].forEach((b) => {
+      if (b) b.classList.remove("recording");
+    });
+    const label = document.getElementById("email-dictate-label");
+    if (label) label.textContent = "Voice Dictate";
+    const bodyLabel = document.getElementById("email-body-dictate-label");
+    if (bodyLabel) bodyLabel.textContent = "Dictate into Body";
+    const status = document.getElementById("email-dictate-status");
+    if (status) status.textContent = "";
+    const bodyStatus = document.getElementById("email-body-dictate-status");
+    if (bodyStatus) bodyStatus.textContent = "";
+  };
+
+  const startEmailDictationFor = (targetName) => {
     if (!SpeechRec) {
-      showToast("⚠️ Voice dictation is not supported by your browser. Please try Google Chrome or Microsoft Edge.");
+      showToast("⚠️ Voice dictation is not supported by your browser. Please use Google Chrome or Microsoft Edge.");
       return;
     }
 
-    if (isEmailDictating && emailSpeechRecognition) {
-      emailSpeechRecognition.stop();
-      return;
+    if (isEmailDictating) {
+      if (activeEmailTarget === targetName) {
+        stopEmailDictation();
+        showToast("⏹️ Voice dictation stopped.");
+        return;
+      } else {
+        stopEmailDictation();
+      }
     }
+
+    activeEmailTarget = targetName;
+    isEmailDictating = true;
 
     try {
       emailSpeechRecognition = new SpeechRec();
       emailSpeechRecognition.continuous = true;
       emailSpeechRecognition.interimResults = true;
-      emailSpeechRecognition.lang = "en-US";
+      emailSpeechRecognition.lang = speechLang;
+
+      const isKeyPoints = (targetName === "key-points");
+      const activeBtns = isKeyPoints ? [keyPointsBtn, floatingMicBtn] : [bodyDictateBtn, bodyFloatingMicBtn];
+      const targetTextarea = document.getElementById(isKeyPoints ? "email-key-points" : "email-output-body");
+      const statusEl = document.getElementById(isKeyPoints ? "email-dictate-status" : "email-body-dictate-status");
+      const countEl = document.getElementById(isKeyPoints ? "email-key-points-count" : "email-body-count");
+      const label = document.getElementById(isKeyPoints ? "email-dictate-label" : "email-body-dictate-label");
 
       emailSpeechRecognition.onstart = () => {
-        isEmailDictating = true;
-        btn.classList.add("recording");
-        if (label) label.textContent = "Listening...";
-        if (status) status.textContent = "🎙️ Listening... Speak your points clearly";
-        showToast("🎙️ Microphone active: dictating into Email Studio");
+        activeBtns.forEach((b) => b && b.classList.add("recording"));
+        const langName = speechLang.startsWith("ur") ? "Urdu / Roman Urdu" : "English";
+        const langCode = speechLang.startsWith("ur") ? "UR" : "EN";
+        if (label) label.textContent = `Listening (${langCode})...`;
+        if (statusEl) statusEl.textContent = `🎙️ Listening in ${langName}... Speak clearly`;
+        showToast(`🎙️ Microphone active: dictating in ${langName} (${langCode})`);
       };
 
       emailSpeechRecognition.onresult = (event) => {
@@ -1913,59 +1982,77 @@ function initEmailVoiceDictation() {
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalStr += transcript;
+            finalStr += transcript + " ";
           } else {
             interim += transcript;
           }
         }
 
-        if (finalStr && keyPointsEl) {
-          const current = keyPointsEl.value.trim();
-          const addition = finalStr.trim();
-          keyPointsEl.value = current ? `${current}\n• ${addition}` : `• ${addition}`;
-          updateWordCharCount(keyPointsEl, countEl);
+        if (finalStr && targetTextarea) {
+          const current = targetTextarea.value;
+          if (!current.trim()) {
+            targetTextarea.value = finalStr.trim();
+          } else if (current.endsWith("\n") || current.endsWith(" ")) {
+            targetTextarea.value = current + finalStr.trim();
+          } else {
+            targetTextarea.value = current + " " + finalStr.trim();
+          }
+          targetTextarea.dispatchEvent(new Event("input"));
+          updateWordCharCount(targetTextarea, countEl);
         }
 
-        if (status) {
+        if (statusEl) {
           if (interim) {
-            status.textContent = `🎙️ "${interim}"`;
+            statusEl.textContent = `🎙️ "${interim}"`;
           } else if (finalStr) {
-            status.textContent = "✨ Dictation captured";
+            statusEl.textContent = "✨ Dictation captured";
           }
         }
       };
 
       emailSpeechRecognition.onerror = (event) => {
-        console.warn("Email voice recognition error:", event.error);
         if (event.error === "not-allowed" || event.error === "service-not-allowed") {
           showToast("⚠️ Microphone access denied. Please allow microphone permissions in browser.");
+          stopEmailDictation();
         } else if (event.error !== "no-speech") {
-          showToast(`⚠️ Voice input: ${event.error}`);
+          console.warn("Email speech recognition notice:", event.error);
         }
       };
 
       emailSpeechRecognition.onend = () => {
-        isEmailDictating = false;
-        btn.classList.remove("recording");
-        if (label) label.textContent = "Voice Input";
-        if (status) {
-          if (status.textContent.includes("Listening")) {
-            status.textContent = "";
-          } else {
-            setTimeout(() => { if (status) status.textContent = ""; }, 3000);
-          }
+        if (isEmailDictating) {
+          try {
+            if (emailSpeechRecognition) emailSpeechRecognition.start();
+            return;
+          } catch (e) {}
         }
+        stopEmailDictation();
       };
 
       emailSpeechRecognition.start();
     } catch (err) {
-      console.error("Failed to start speech recognition:", err);
+      console.error("Failed to start email speech recognition:", err);
       showToast(`⚠️ Could not start voice input: ${err.message}`);
-      isEmailDictating = false;
-      btn.classList.remove("recording");
-      if (label) label.textContent = "Voice Input";
+      stopEmailDictation();
     }
-  });
+  };
+
+  if (keyPointsBtn && !keyPointsBtn.dataset.bound) {
+    keyPointsBtn.dataset.bound = "true";
+    keyPointsBtn.addEventListener("click", () => startEmailDictationFor("key-points"));
+  }
+  if (floatingMicBtn && !floatingMicBtn.dataset.bound) {
+    floatingMicBtn.dataset.bound = "true";
+    floatingMicBtn.addEventListener("click", () => startEmailDictationFor("key-points"));
+  }
+  if (bodyDictateBtn && !bodyDictateBtn.dataset.bound) {
+    bodyDictateBtn.dataset.bound = "true";
+    bodyDictateBtn.addEventListener("click", () => startEmailDictationFor("body"));
+  }
+  if (bodyFloatingMicBtn && !bodyFloatingMicBtn.dataset.bound) {
+    bodyFloatingMicBtn.dataset.bound = "true";
+    bodyFloatingMicBtn.addEventListener("click", () => startEmailDictationFor("body"));
+  }
 }
 
 function initEmailStudio() {
@@ -2734,6 +2821,106 @@ function initImageStudio() {
   }
 
   // --- Photo Background Changer Event Listeners ---
+  // Quick Photo Background Presets (in Panel 1)
+  const quickPhotoBgBtns = document.querySelectorAll(".btn-quick-photo-bg");
+  quickPhotoBgBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      quickPhotoBgBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const color = btn.getAttribute("data-color");
+      if (color === "original") {
+        resetImageBackground();
+      } else {
+        passportNewBgColor = color;
+        // Sync with Tab 3 passportColorBtns
+        passportColorBtns.forEach((b) => {
+          if (b.getAttribute("data-color") === color) b.classList.add("active");
+          else b.classList.remove("active");
+        });
+        const hexPicker = document.getElementById("picker-image-bg-color");
+        const hexLabel = document.getElementById("label-image-bg-hex");
+        if (hexPicker && color !== "transparent") hexPicker.value = color;
+        if (hexLabel) hexLabel.textContent = color === "transparent" ? "Transparent" : color.toUpperCase();
+        applyImageBackgroundChange();
+      }
+    });
+  });
+
+  const btnQuickMore = document.getElementById("quick-photo-bg-more");
+  if (btnQuickMore) {
+    btnQuickMore.addEventListener("click", () => {
+      if (tabBgBtn && panelBg) {
+        switchStudioSubpanel(tabBgBtn, panelBg);
+        if (studioImage && !passportTargetBgColor) autoDetectPhotoBgColor();
+      }
+    });
+  }
+
+  // 1-Click Convert to Professional White (in Panel 3)
+  const btnQuickConvertWhite = document.getElementById("btn-quick-convert-white");
+  if (btnQuickConvertWhite) {
+    btnQuickConvertWhite.addEventListener("click", () => {
+      passportNewBgColor = "#ffffff";
+      passportColorBtns.forEach((b) => {
+        if (b.getAttribute("data-color") === "#ffffff") b.classList.add("active");
+        else b.classList.remove("active");
+      });
+      const hexPicker = document.getElementById("picker-image-bg-color");
+      const hexLabel = document.getElementById("label-image-bg-hex");
+      if (hexPicker) hexPicker.value = "#ffffff";
+      if (hexLabel) hexLabel.textContent = "#FFFFFF";
+      applyImageBackgroundChange();
+    });
+  }
+
+  // Eyedropper / Sample Backdrop Color
+  const btnEyedropperBg = document.getElementById("btn-eyedropper-bg");
+  if (btnEyedropperBg) {
+    btnEyedropperBg.addEventListener("click", async () => {
+      if (window.EyeDropper) {
+        try {
+          const eye = new EyeDropper();
+          const res = await eye.open();
+          if (res && res.sRGBHex) {
+            passportTargetBgColor = res.sRGBHex.toUpperCase();
+            const chip = document.getElementById("chip-target-color");
+            if (chip) chip.style.backgroundColor = passportTargetBgColor;
+            const label = document.getElementById("label-target-hex");
+            if (label) label.textContent = `${passportTargetBgColor} (Sampled)`;
+            showToast(`🎯 Sampled backdrop color: ${passportTargetBgColor}`);
+          }
+        } catch (e) {
+          // EyeDropper cancelled
+        }
+      } else {
+        showToast("ℹ Click on the photo canvas to pick the backdrop color");
+        const canvas = document.getElementById("studio-canvas");
+        if (canvas) {
+          const onCanvasPick = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = Math.floor((e.clientX - rect.left) * scaleX);
+            const y = Math.floor((e.clientY - rect.top) * scaleY);
+            const ctx = canvas.getContext("2d");
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1).toUpperCase()}`;
+            passportTargetBgColor = hex;
+            const chip = document.getElementById("chip-target-color");
+            if (chip) chip.style.backgroundColor = hex;
+            const label = document.getElementById("label-target-hex");
+            if (label) label.textContent = `${hex} (Sampled)`;
+            showToast(`🎯 Sampled backdrop color: ${hex}`);
+            canvas.removeEventListener("click", onCanvasPick);
+            canvas.style.cursor = "";
+          };
+          canvas.style.cursor = "crosshair";
+          canvas.addEventListener("click", onCanvasPick, { once: true });
+        }
+      }
+    });
+  }
+
   const btnAutoDetect = document.getElementById("btn-auto-detect-bg");
   if (btnAutoDetect) {
     btnAutoDetect.addEventListener("click", () => {
@@ -2798,6 +2985,32 @@ function initImageStudio() {
   if (btnResetBg) {
     btnResetBg.addEventListener("click", resetImageBackground);
   }
+
+  // Hold to Compare Photo Background
+  const btnCompareBg = document.getElementById("btn-compare-bg");
+  if (btnCompareBg) {
+    const showOriginalBg = (e) => {
+      if (e && e.cancelable) e.preventDefault();
+      if (!studioOriginalImage) return;
+      isComparingOriginal = true;
+      if (compareBadge) {
+        compareBadge.innerHTML = '<i class="fa-solid fa-backward-step"></i> ORIGINAL PHOTO (UNMODIFIED)';
+        compareBadge.style.display = "inline-flex";
+      }
+      renderStudioCanvas();
+    };
+    const hideOriginalBg = (e) => {
+      if (e && e.cancelable) e.preventDefault();
+      isComparingOriginal = false;
+      if (compareBadge) compareBadge.style.display = "none";
+      renderStudioCanvas();
+    };
+    btnCompareBg.addEventListener("mousedown", showOriginalBg);
+    btnCompareBg.addEventListener("mouseup", hideOriginalBg);
+    btnCompareBg.addEventListener("mouseleave", hideOriginalBg);
+    btnCompareBg.addEventListener("touchstart", showOriginalBg, { passive: false });
+    btnCompareBg.addEventListener("touchend", hideOriginalBg);
+  }
 }
 
 function autoDetectPhotoBgColor() {
@@ -2813,11 +3026,11 @@ function autoDetectPhotoBgColor() {
     ctx.drawImage(src, 0, 0);
 
     const points = [
-      [Math.min(5, w - 1), Math.min(5, h - 1)],
-      [Math.max(0, w - 6), Math.min(5, h - 1)],
-      [Math.min(5, w - 1), Math.max(0, h - 6)],
-      [Math.max(0, w - 6), Math.max(0, h - 6)],
-      [Math.floor(w / 2), Math.min(5, h - 1)]
+      [Math.min(8, w - 1), Math.min(8, h - 1)],
+      [Math.floor(w * 0.2), Math.min(8, h - 1)],
+      [Math.floor(w * 0.5), Math.min(8, h - 1)],
+      [Math.floor(w * 0.8), Math.min(8, h - 1)],
+      [Math.max(0, w - 9), Math.min(8, h - 1)]
     ];
 
     const rArr = [], gArr = [], bArr = [];
@@ -2890,7 +3103,13 @@ async function applyImageBackgroundChange() {
         studioImage = newImg;
         invalidateRetouchCache();
         renderStudioCanvas();
-        showToast(`✅ Photo background changed to ${passportNewBgColor === "transparent" ? "Transparent" : passportNewBgColor}!`);
+        updatePhotoBgStatusBadge(passportNewBgColor === "#ffffff" ? "White (Passport)" : (passportNewBgColor === "transparent" ? "Transparent" : passportNewBgColor.toUpperCase()));
+        const quickBtns = document.querySelectorAll(".btn-quick-photo-bg");
+        quickBtns.forEach((b) => {
+          if (b.getAttribute("data-color") === passportNewBgColor) b.classList.add("active");
+          else b.classList.remove("active");
+        });
+        showToast(`✅ Photo background changed to ${passportNewBgColor === "transparent" ? "Transparent" : (passportNewBgColor === "#ffffff" ? "Professional White" : passportNewBgColor)}!`);
       };
       newImg.src = result.data_url || result.url;
     } else {
@@ -2907,6 +3126,22 @@ async function applyImageBackgroundChange() {
   }
 }
 
+function updatePhotoBgStatusBadge(statusText) {
+  const badge = document.getElementById("photo-bg-status-badge");
+  if (!badge) return;
+  if (statusText === "Original") {
+    badge.innerHTML = '<i class="fa-solid fa-image"></i> Original';
+    badge.style.color = '#3b82f6';
+    badge.style.background = '#eff6ff';
+    badge.style.borderColor = '#bfdbfe';
+  } else {
+    badge.innerHTML = `<i class="fa-solid fa-check"></i> ${statusText}`;
+    badge.style.color = '#10b981';
+    badge.style.background = '#ecfdf5';
+    badge.style.borderColor = '#a7f3d0';
+  }
+}
+
 function resetImageBackground() {
   if (!studioOriginalImage) {
     showToast("ℹ Already using original photo.");
@@ -2915,6 +3150,12 @@ function resetImageBackground() {
   studioImage = studioOriginalImage;
   invalidateRetouchCache();
   renderStudioCanvas();
+  updatePhotoBgStatusBadge("Original");
+  const quickBtns = document.querySelectorAll(".btn-quick-photo-bg");
+  quickBtns.forEach((b) => {
+    if (b.getAttribute("data-color") === "original") b.classList.add("active");
+    else b.classList.remove("active");
+  });
   showToast("↩ Reverted to original photo.");
 }
 
