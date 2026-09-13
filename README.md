@@ -52,6 +52,9 @@
   - **4 1-Click Retouch Presets**: *Natural Glow*, *Erase Dark Circles*, *Studio Glam*, and *Reset*.
   - **Hold to Compare**: Press and hold to instantly display the raw unretouched original with a floating badge.
   - **Direct Export**: Download high-resolution PNG or set directly as your assistant profile picture (**Set as Account DP**).
+- **In-Chat Quick Studio & Photo Retouch (+)**:
+  - Direct `+` menu on the fixed bottom omnibar allows instant photo upload, AI art generation, and email drafting without leaving the chat.
+  - Attached photos can be retouched right in chat with instant presets (`✨ Face Glow`, `👁️ Conceal Dark Circles`, `📷 1:1 WhatsApp DP`, `💎 Glam`, `🖤 B&W`) and returned with 1-click Download, Set as DP, or Fine-tune in Studio.
 
 ### 5. 🧠 Dual-Layer Memory Engine
 - **Short-Term Memory**: Session conversation history with SQLite persistence and sliding window context.
