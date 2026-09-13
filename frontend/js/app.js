@@ -1244,12 +1244,14 @@ window.openImageInStudio = function(imageUrl) {
   img.crossOrigin = "anonymous";
   img.onload = () => {
     studioImage = img;
+    studioOriginalImage = img;
     const dropzone = document.getElementById("studio-canvas-dropzone");
     if (dropzone) dropzone.classList.add("has-image");
     const emptyOverlay = document.getElementById("studio-empty-overlay");
     if (emptyOverlay) emptyOverlay.style.display = "none";
     switchView("image");
     invalidateRetouchCache();
+    autoDetectPhotoBgColor();
     renderStudioCanvas();
     showToast("🎨 Loaded photo into Image Studio!");
   };
@@ -2179,6 +2181,11 @@ const SOCIAL_PRESETS = {
 
 // Studio Framing State
 let studioImage = null;
+let studioOriginalImage = null;
+let passportTargetBgColor = null;
+let passportNewBgColor = "#ffffff";
+let passportTolerance = 35;
+let passportFeather = 3;
 let studioPlatform = "whatsapp";
 let studioPreset = SOCIAL_PRESETS.whatsapp[0];
 let studioMode = "blur";
@@ -2442,24 +2449,27 @@ function initImageStudio() {
   if (imageStudioInitialized) return;
   imageStudioInitialized = true;
 
-  // Studio Subpanel Tab Switcher (Framing vs Retouch)
+  // Studio Subpanel Tab Switcher (Framing vs Retouch vs Image BG Changer)
   const tabFramingBtn = document.getElementById("tab-studio-framing-btn");
   const tabRetouchBtn = document.getElementById("tab-studio-retouch-btn");
+  const tabBgBtn = document.getElementById("tab-studio-bg-btn");
   const panelFraming = document.getElementById("panel-studio-framing");
   const panelRetouch = document.getElementById("panel-studio-retouch");
+  const panelBg = document.getElementById("panel-studio-bg");
 
-  if (tabFramingBtn && tabRetouchBtn && panelFraming && panelRetouch) {
-    tabFramingBtn.addEventListener("click", () => {
-      tabFramingBtn.classList.add("active");
-      tabRetouchBtn.classList.remove("active");
-      panelFraming.classList.add("active");
-      panelRetouch.classList.remove("active");
-    });
-    tabRetouchBtn.addEventListener("click", () => {
-      tabRetouchBtn.classList.add("active");
-      tabFramingBtn.classList.remove("active");
-      panelRetouch.classList.add("active");
-      panelFraming.classList.remove("active");
+  function switchStudioSubpanel(activeTab, activePanel) {
+    [tabFramingBtn, tabRetouchBtn, tabBgBtn].forEach(t => t && t.classList.remove("active"));
+    [panelFraming, panelRetouch, panelBg].forEach(p => p && p.classList.remove("active"));
+    if (activeTab) activeTab.classList.add("active");
+    if (activePanel) activePanel.classList.add("active");
+  }
+
+  if (tabFramingBtn) tabFramingBtn.addEventListener("click", () => switchStudioSubpanel(tabFramingBtn, panelFraming));
+  if (tabRetouchBtn) tabRetouchBtn.addEventListener("click", () => switchStudioSubpanel(tabRetouchBtn, panelRetouch));
+  if (tabBgBtn) {
+    tabBgBtn.addEventListener("click", () => {
+      switchStudioSubpanel(tabBgBtn, panelBg);
+      if (studioImage && !passportTargetBgColor) autoDetectPhotoBgColor();
     });
   }
 
@@ -2722,6 +2732,190 @@ function initImageStudio() {
   if (setDpBtn) {
     setDpBtn.addEventListener("click", setStudioCanvasAsProfileDP);
   }
+
+  // --- Photo Background Changer Event Listeners ---
+  const btnAutoDetect = document.getElementById("btn-auto-detect-bg");
+  if (btnAutoDetect) {
+    btnAutoDetect.addEventListener("click", () => {
+      autoDetectPhotoBgColor();
+      if (passportTargetBgColor) {
+        showToast(`🎯 Auto-detected backdrop color: ${passportTargetBgColor}`);
+      }
+    });
+  }
+
+  const passportColorBtns = document.querySelectorAll(".passport-color-btn");
+  passportColorBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      passportColorBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      passportNewBgColor = btn.getAttribute("data-color");
+      const hexPicker = document.getElementById("picker-image-bg-color");
+      const hexLabel = document.getElementById("label-image-bg-hex");
+      if (passportNewBgColor === "transparent") {
+        if (hexLabel) hexLabel.textContent = "Transparent";
+      } else {
+        if (hexPicker) hexPicker.value = passportNewBgColor;
+        if (hexLabel) hexLabel.textContent = passportNewBgColor.toUpperCase();
+      }
+    });
+  });
+
+  const pickerImageBg = document.getElementById("picker-image-bg-color");
+  if (pickerImageBg) {
+    pickerImageBg.addEventListener("input", (e) => {
+      passportNewBgColor = e.target.value;
+      passportColorBtns.forEach((b) => b.classList.remove("active"));
+      const hexLabel = document.getElementById("label-image-bg-hex");
+      if (hexLabel) hexLabel.textContent = passportNewBgColor.toUpperCase();
+    });
+  }
+
+  const sliderBgTol = document.getElementById("slider-bg-tolerance");
+  if (sliderBgTol) {
+    sliderBgTol.addEventListener("input", (e) => {
+      passportTolerance = parseInt(e.target.value);
+      const label = document.getElementById("label-bg-tolerance");
+      if (label) label.textContent = `${passportTolerance}%`;
+    });
+  }
+
+  const sliderBgFeather = document.getElementById("slider-bg-feather");
+  if (sliderBgFeather) {
+    sliderBgFeather.addEventListener("input", (e) => {
+      passportFeather = parseInt(e.target.value);
+      const label = document.getElementById("label-bg-feather");
+      if (label) label.textContent = `${passportFeather}px`;
+    });
+  }
+
+  const btnApplyBg = document.getElementById("btn-apply-image-bg");
+  if (btnApplyBg) {
+    btnApplyBg.addEventListener("click", applyImageBackgroundChange);
+  }
+
+  const btnResetBg = document.getElementById("btn-reset-image-bg");
+  if (btnResetBg) {
+    btnResetBg.addEventListener("click", resetImageBackground);
+  }
+}
+
+function autoDetectPhotoBgColor() {
+  const src = studioOriginalImage || studioImage;
+  if (!src) return;
+  try {
+    const off = document.createElement("canvas");
+    const w = src.naturalWidth || src.width;
+    const h = src.naturalHeight || src.height;
+    off.width = w;
+    off.height = h;
+    const ctx = off.getContext("2d");
+    ctx.drawImage(src, 0, 0);
+
+    const points = [
+      [Math.min(5, w - 1), Math.min(5, h - 1)],
+      [Math.max(0, w - 6), Math.min(5, h - 1)],
+      [Math.min(5, w - 1), Math.max(0, h - 6)],
+      [Math.max(0, w - 6), Math.max(0, h - 6)],
+      [Math.floor(w / 2), Math.min(5, h - 1)]
+    ];
+
+    const rArr = [], gArr = [], bArr = [];
+    points.forEach(([px, py]) => {
+      const p = ctx.getImageData(px, py, 1, 1).data;
+      rArr.push(p[0]); gArr.push(p[1]); bArr.push(p[2]);
+    });
+
+    rArr.sort((a, b) => a - b);
+    gArr.sort((a, b) => a - b);
+    bArr.sort((a, b) => a - b);
+
+    const r = rArr[Math.floor(rArr.length / 2)];
+    const g = gArr[Math.floor(gArr.length / 2)];
+    const b = bArr[Math.floor(bArr.length / 2)];
+
+    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+    passportTargetBgColor = hex;
+
+    const chip = document.getElementById("chip-target-color");
+    if (chip) chip.style.backgroundColor = hex;
+    const label = document.getElementById("label-target-hex");
+    if (label) label.textContent = `${hex} (Auto-Detected)`;
+  } catch (e) {
+    console.warn("Auto-detect backdrop failed:", e);
+  }
+}
+
+async function applyImageBackgroundChange() {
+  const src = studioOriginalImage || studioImage;
+  if (!src) {
+    showToast("⚠️ Please upload a photo first!");
+    return;
+  }
+
+  const applyBtn = document.getElementById("btn-apply-image-bg");
+  const originalText = applyBtn ? applyBtn.innerHTML : "";
+  if (applyBtn) {
+    applyBtn.disabled = true;
+    applyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Background...';
+  }
+
+  try {
+    const off = document.createElement("canvas");
+    const w = src.naturalWidth || src.width;
+    const h = src.naturalHeight || src.height;
+    off.width = w;
+    off.height = h;
+    const ctx = off.getContext("2d");
+    ctx.drawImage(src, 0, 0);
+    const dataUrl = off.toDataURL("image/png");
+
+    const resp = await fetch("/api/studio/change-bg", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image_data: dataUrl,
+        new_bg_color: passportNewBgColor,
+        target_bg_color: passportTargetBgColor,
+        tolerance: passportTolerance,
+        feather: passportFeather
+      })
+    });
+
+    const result = await resp.json();
+    if (result.success && (result.data_url || result.url)) {
+      const newImg = new Image();
+      newImg.crossOrigin = "anonymous";
+      newImg.onload = () => {
+        studioImage = newImg;
+        invalidateRetouchCache();
+        renderStudioCanvas();
+        showToast(`✅ Photo background changed to ${passportNewBgColor === "transparent" ? "Transparent" : passportNewBgColor}!`);
+      };
+      newImg.src = result.data_url || result.url;
+    } else {
+      showToast(`❌ Failed to change background: ${result.error || "Unknown error"}`);
+    }
+  } catch (err) {
+    console.error("Change bg error:", err);
+    showToast("❌ Network error changing background.");
+  } finally {
+    if (applyBtn) {
+      applyBtn.disabled = false;
+      applyBtn.innerHTML = originalText;
+    }
+  }
+}
+
+function resetImageBackground() {
+  if (!studioOriginalImage) {
+    showToast("ℹ Already using original photo.");
+    return;
+  }
+  studioImage = studioOriginalImage;
+  invalidateRetouchCache();
+  renderStudioCanvas();
+  showToast("↩ Reverted to original photo.");
 }
 
 function updateStudioPresetsDropdown() {
@@ -2761,8 +2955,10 @@ function loadStudioImageFromFile(file) {
     const img = new Image();
     img.onload = () => {
       studioImage = img;
+      studioOriginalImage = img;
       invalidateRetouchCache();
       document.getElementById("studio-empty-overlay").style.display = "none";
+      autoDetectPhotoBgColor();
       renderStudioCanvas();
       showToast(`📸 Loaded image: ${file.name} (${img.width} × ${img.height})`);
     };

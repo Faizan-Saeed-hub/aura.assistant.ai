@@ -23,7 +23,7 @@ from backend.rag.chunker import text_chunker
 from backend.rag.vector_store import vector_store
 from backend.agent.orchestrator import agent_orchestrator
 from backend.tools.notes import add_note, list_notes, complete_note, delete_note
-from backend.tools.image_studio import generate_ai_image, retouch_image_file
+from backend.tools.image_studio import generate_ai_image, retouch_image_file, replace_image_background
 from backend.auth.supabase_client import supabase_auth
 from backend.llm.client import llm_client
 
@@ -92,6 +92,14 @@ class AuthSignupRequest(BaseModel):
 class AuthLoginRequest(BaseModel):
     email: str
     password: str
+
+class ChangeBgRequest(BaseModel):
+    image_data: str
+    new_bg_color: Optional[str] = "#ffffff"
+    target_bg_color: Optional[str] = None
+    tolerance: Optional[int] = 35
+    feather: Optional[int] = 3
+    use_ai: Optional[bool] = False
 
 # --- Chat & Session Endpoints ---
 
@@ -616,6 +624,29 @@ def update_profile(req: UserProfileUpdateRequest):
         raise HTTPException(status_code=400, detail="This email address is already registered to another user.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- Image Studio Background Replacement & Media Endpoints ---
+
+@app.post("/api/studio/change-bg")
+def api_change_image_bg(req: ChangeBgRequest):
+    res = replace_image_background(
+        image_input=req.image_data,
+        new_bg_color=req.new_bg_color or "#ffffff",
+        target_bg_color=req.target_bg_color,
+        tolerance=req.tolerance if req.tolerance is not None else 35,
+        feather=req.feather if req.feather is not None else 3,
+        use_ai=bool(req.use_ai)
+    )
+    if not res.get("success"):
+        raise HTTPException(status_code=500, detail=res.get("error", "Background replacement failed"))
+    return res
+
+@app.get("/api/image/download/{filename}")
+def download_image_file(filename: str):
+    file_path = UPLOADS_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, filename=filename)
 
 # --- Static Frontend & Media Serving ---
 

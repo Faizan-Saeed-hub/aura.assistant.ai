@@ -480,6 +480,9 @@
                   <button type="button" class="studio-tab-btn" id="tab-studio-retouch-btn">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ AI Face Glow & Retouch
                   </button>
+                  <button type="button" class="studio-tab-btn" id="tab-studio-bg-btn">
+                    <i class="fa-solid fa-id-badge"></i> 🪄 Image Background (Passport)
+                  </button>
                 </div>
 
                 <!-- PANEL 1: Framing & Social Media Platform Sizing -->
@@ -692,6 +695,97 @@
                   <div style="margin-top: 12px;">
                     <button type="button" class="btn-compare-retouch" id="btn-compare-retouch">
                       <i class="fa-solid fa-eye"></i> Hold to View Original Photo
+                    </button>
+                  </div>
+                </div>
+
+                <!-- PANEL 3: Photo Background Changer (Passport, Visa & Cutouts) -->
+                <div class="studio-subpanel" id="panel-studio-bg">
+                  <div class="bg-tool-header">
+                    <h4><i class="fa-solid fa-id-badge text-primary"></i> Passport & Photo Background Changer</h4>
+                    <p class="panel-desc">Change the photo's actual background (e.g. blue passport background to white) while keeping the person intact.</p>
+                  </div>
+
+                  <!-- Target Background Color Detection -->
+                  <div class="form-field">
+                    <label>Original Photo Background Color to Replace</label>
+                    <div class="target-bg-detect-row">
+                      <div class="target-color-preview-box">
+                        <span class="target-color-chip" id="chip-target-color" style="background:#2563eb;" title="Current detected backdrop color"></span>
+                        <span id="label-target-hex">#2563EB (Auto-Detected)</span>
+                      </div>
+                      <button type="button" class="btn-tool-sm" id="btn-auto-detect-bg" title="Auto-detect from photo border">
+                        <i class="fa-solid fa-crosshairs"></i> Auto Detect
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Desired New Background Color -->
+                  <div class="form-field">
+                    <label>Replace With New Background Color</label>
+                    <div class="passport-colors-grid">
+                      <button type="button" class="passport-color-btn active" data-color="#ffffff" title="Passport White (Global Standard)">
+                        <span class="color-dot" style="background:#ffffff; border:1px solid #cbd5e1;"></span>
+                        <span class="color-name">Passport White</span>
+                      </button>
+                      <button type="button" class="passport-color-btn" data-color="#2563eb" title="Passport Blue (Standard Blue)">
+                        <span class="color-dot" style="background:#2563eb;"></span>
+                        <span class="color-name">Passport Blue</span>
+                      </button>
+                      <button type="button" class="passport-color-btn" data-color="#f8fafc" title="Off White / Light Gray">
+                        <span class="color-dot" style="background:#f8fafc; border:1px solid #cbd5e1;"></span>
+                        <span class="color-name">Soft Off-White</span>
+                      </button>
+                      <button type="button" class="passport-color-btn" data-color="#dc2626" title="Passport Red">
+                        <span class="color-dot" style="background:#dc2626;"></span>
+                        <span class="color-name">Passport Red</span>
+                      </button>
+                      <button type="button" class="passport-color-btn" data-color="#94a3b8" title="Studio Gray">
+                        <span class="color-dot" style="background:#94a3b8;"></span>
+                        <span class="color-name">Studio Gray</span>
+                      </button>
+                      <button type="button" class="passport-color-btn" data-color="transparent" title="Transparent PNG Cutout">
+                        <span class="color-dot" style="background: repeating-conic-gradient(#cbd5e1 0% 25%, transparent 0% 50%) 50% / 8px 8px;"></span>
+                        <span class="color-name">Transparent</span>
+                      </button>
+                    </div>
+
+                    <!-- Any Custom Color Picker -->
+                    <div class="custom-bg-color-row">
+                      <span class="custom-picker-title"><i class="fa-solid fa-palette"></i> Or Pick Any Color:</span>
+                      <div class="custom-picker-input-wrap">
+                        <input type="color" id="picker-image-bg-color" value="#ffffff" title="Pick any custom hex color" />
+                        <span id="label-image-bg-hex">#FFFFFF</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Edge Tolerance & Feathering Sliders -->
+                  <div class="form-field">
+                    <div class="slider-row">
+                      <div class="slider-label">
+                        <span>Color Sensitivity / Tolerance</span>
+                        <span id="label-bg-tolerance">35%</span>
+                      </div>
+                      <input type="range" id="slider-bg-tolerance" min="5" max="80" value="35" class="clean-slider" />
+                    </div>
+
+                    <div class="slider-row" style="margin-top: 10px;">
+                      <div class="slider-label">
+                        <span>Edge Smoothing / Feather</span>
+                        <span id="label-bg-feather">3px</span>
+                      </div>
+                      <input type="range" id="slider-bg-feather" min="0" max="10" value="3" class="clean-slider" />
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="bg-action-buttons">
+                    <button type="button" class="btn-accent-pill full-width" id="btn-apply-image-bg">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> Apply Background Color to Photo
+                    </button>
+                    <button type="button" class="btn-secondary-pill full-width" id="btn-reset-image-bg" style="margin-top: 8px;">
+                      <i class="fa-solid fa-rotate-left"></i> Revert to Original Photo
                     </button>
                   </div>
                 </div>

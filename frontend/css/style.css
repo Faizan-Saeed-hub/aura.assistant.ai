@@ -3018,6 +3018,195 @@ body {
   100% { transform: scale(1.04); }
 }
 
+/* ==================== PHOTO BACKGROUND CHANGER (PASSPORT/CUTOUT) ==================== */
+.bg-tool-header {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.bg-tool-header h4 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bg-tool-header .panel-desc {
+  font-size: 0.72rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.target-bg-detect-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-top: 4px;
+}
+
+.target-color-preview-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.target-color-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+#label-target-hex {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.btn-tool-sm {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-tool-sm:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.passport-colors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.passport-color-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.passport-color-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.passport-color-btn.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 1.5px #2563eb;
+}
+
+.passport-color-btn .color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.passport-color-btn .color-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-bg-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.custom-picker-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-picker-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-picker-input-wrap input[type="color"] {
+  -webkit-appearance: none;
+  border: 1px solid #cbd5e1;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+
+.custom-picker-input-wrap input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.custom-picker-input-wrap input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+#label-image-bg-hex {
+  font-family: monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.bg-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
 /* Platform Tabs */
 .platform-tabs-row {
   display: flex;
