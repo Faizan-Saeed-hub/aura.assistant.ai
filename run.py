@@ -1,3 +1,4 @@
+import os
 import sys
 import webbrowser
 import threading
@@ -35,21 +36,32 @@ def open_browser(port):
     webbrowser.open(url)
 
 def main():
-    port = find_available_port(8000)
+    port_env = os.getenv("PORT")
+    if port_env:
+        port = int(port_env)
+        host = "0.0.0.0"
+        is_cloud = True
+    else:
+        port = find_available_port(8000)
+        host = "127.0.0.1"
+        is_cloud = False
+
     print("=" * 60)
     print("           [+] AURA - AI PERSONAL ASSISTANT [+]           ")
     print("=" * 60)
     print("[*] Initializing Database & Vector Engine...")
     init_db()
-    print(f"[✓] Ready! Starting FastAPI Web Server on port {port}...")
-    print(f"[*] Open in browser: http://localhost:{port}")
+    print(f"[✓] Ready! Starting FastAPI Web Server on host {host} port {port}...")
+    if not is_cloud:
+        print(f"[*] Open in browser: http://localhost:{port}")
     print("=" * 60)
 
-    # Automatically launch browser in background thread
-    threading.Thread(target=open_browser, args=(port,), daemon=True).start()
+    # Automatically launch browser only in local mode
+    if not is_cloud:
+        threading.Thread(target=open_browser, args=(port,), daemon=True).start()
 
     # Start Uvicorn Server
-    uvicorn.run("backend.app:app", host="127.0.0.1", port=port, reload=False, log_level="info")
+    uvicorn.run("backend.app:app", host=host, port=port, reload=False, log_level="info")
 
 if __name__ == "__main__":
     main()

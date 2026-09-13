@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: aura-assistant-ai
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEFAULT_PROVIDER
+        value: groq
+      - key: DEFAULT_GROQ_MODEL
+        value: llama-3.3-70b-versatile
