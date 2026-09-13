@@ -211,6 +211,7 @@ function bindEvents() {
   }
 
   // Account Registration Form Submit
+  // Account Registration Form Submit (Supabase / Local Cloud-Ready Auth)
   const regForm = document.getElementById("register-account-form");
   if (regForm) {
     regForm.addEventListener("submit", async (e) => {
@@ -225,19 +226,19 @@ function bindEvents() {
       const avatarUrl = document.getElementById("reg-avatar-url") ? document.getElementById("reg-avatar-url").value : undefined;
 
       try {
-        const res = await fetch("/api/auth/register", {
+        const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, gender, role, bio, avatar_url: avatarUrl })
+          body: JSON.stringify({ name, email, password, gender, role, avatar_url: avatarUrl })
         });
-        if (res.ok) {
-          const data = await res.json();
-          applyUserProfileToUI(data.user);
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (data.user) applyUserProfileToUI(data.user);
           closeModal("profile-modal");
-          showToast(`🎉 Account created! Welcome, ${data.user.name}!`);
+          const modeMsg = data.mode === "supabase_cloud" ? "Synced with Supabase Cloud!" : "Account created & ready!";
+          showToast(`🎉 Welcome, ${data.user ? data.user.name : name}! ${modeMsg}`);
         } else {
-          const err = await res.json().catch(() => ({}));
-          showToast(`⚠️ Registration failed: ${err.detail || "Server error"}`);
+          showToast(`⚠️ Registration failed: ${data.error || data.detail || "Server error"}`);
         }
       } catch (err) {
         showToast("⚠️ Network error registering account.");
@@ -539,34 +540,34 @@ function bindEvents() {
 
   // Settings Form Submit
   const settingsForm = document.getElementById("settings-form");
-  settingsForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const provider = document.getElementById("setting-provider").value;
-    const openrouterKey = document.getElementById("setting-openrouter-key") ? document.getElementById("setting-openrouter-key").value.trim() : "";
-    const openrouterModel = document.getElementById("setting-openrouter-model") ? document.getElementById("setting-openrouter-model").value : "";
-    const geminiKey = document.getElementById("setting-gemini-key").value.trim();
-    const groqKey = document.getElementById("setting-groq-key").value.trim();
-    const groqModel = document.getElementById("setting-groq-model") ? document.getElementById("setting-groq-model").value : "";
-    const openaiKey = document.getElementById("setting-openai-key").value.trim();
+  if (settingsForm) {
+    settingsForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const provider = document.getElementById("setting-provider").value;
+      const openrouterKey = document.getElementById("setting-openrouter-key") ? document.getElementById("setting-openrouter-key").value.trim() : "";
+      const openrouterModel = document.getElementById("setting-openrouter-model") ? document.getElementById("setting-openrouter-model").value : "";
+      const geminiKey = document.getElementById("setting-gemini-key") ? document.getElementById("setting-gemini-key").value.trim() : "";
+      const groqKey = document.getElementById("setting-groq-key") ? document.getElementById("setting-groq-key").value.trim() : "";
+      const groqModel = document.getElementById("setting-groq-model") ? document.getElementById("setting-groq-model").value : "";
 
-    await fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        active_provider: provider,
-        openrouter_api_key: openrouterKey || undefined,
-        openrouter_model: openrouterModel || undefined,
-        gemini_api_key: geminiKey || undefined,
-        groq_api_key: groqKey || undefined,
-        groq_model: groqModel || undefined,
-        openai_api_key: openaiKey || undefined
-      })
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          active_provider: provider,
+          openrouter_api_key: openrouterKey || undefined,
+          openrouter_model: openrouterModel || undefined,
+          gemini_api_key: geminiKey || undefined,
+          groq_api_key: groqKey || undefined,
+          groq_model: groqModel || undefined
+        })
+      });
+
+      closeModal("settings-modal");
+      loadSettings();
+      showToast("Settings saved successfully!");
     });
-
-    closeModal("settings-modal");
-    loadSettings();
-    showToast("Settings saved successfully!");
-  });
+  }
 }
 
 function setupModal(triggerId, modalId, onLoad) {
@@ -1523,12 +1524,16 @@ async function loadSettings() {
   const s = await res.json();
 
   const providerEl = document.getElementById("setting-provider");
-  if (providerEl) providerEl.value = s.active_provider || "openrouter";
+  if (providerEl) providerEl.value = s.active_provider || "groq";
   
   const badge = document.getElementById("active-model-badge");
   if (badge) {
-    const provName = s.active_provider === "openrouter" ? "OpenRouter (Free)" : (s.active_provider || "Gemini").toUpperCase();
-    badge.textContent = `${provName} Active`;
+    let provName = "⚡ Groq Free Active";
+    if (s.active_provider === "groq") provName = "⚡ Groq Free Active";
+    else if (s.active_provider === "gemini") provName = "✨ Gemini (BYOK Active)";
+    else if (s.active_provider === "openrouter") provName = "OpenRouter (Free)";
+    else provName = `${(s.active_provider || "groq").toUpperCase()} Active`;
+    badge.textContent = provName;
   }
 
   const setConfiguredBadge = (elementId, isConfigured) => {
@@ -1548,7 +1553,6 @@ async function loadSettings() {
   setConfiguredBadge("openrouter-status-hint", s.openrouter_configured);
   setConfiguredBadge("gemini-status-hint", s.gemini_configured);
   setConfiguredBadge("groq-status-hint", s.groq_configured);
-  setConfiguredBadge("openai-status-hint", s.openai_configured);
 
   const openrouterModelEl = document.getElementById("setting-openrouter-model");
   if (openrouterModelEl && s.openrouter_model) {

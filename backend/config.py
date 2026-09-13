@@ -26,24 +26,26 @@ class Config:
     PROJECT_NAME = "AI Personal Assistant"
     VERSION = "1.0.0"
     
-    # Supported LLM Providers: "openrouter", "gemini", "groq", "openai", "ollama"
-    DEFAULT_PROVIDER = os.getenv("DEFAULT_PROVIDER", "openrouter")
+    # Supported Free LLM Providers: "groq", "gemini", "openrouter", "ollama"
+    DEFAULT_PROVIDER = os.getenv("DEFAULT_PROVIDER", "groq")
     
-    # API Keys (Free options: OpenRouter, Google Gemini, Groq, Ollama)
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    # Free API Keys (Groq, Google Gemini, OpenRouter)
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    
+    # Supabase Cloud Auth Settings
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+    SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
     
     # Ollama settings (Local, free, offline)
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
     # Default Models
+    DEFAULT_GROQ_MODEL = os.getenv("DEFAULT_GROQ_MODEL", "groq/compound-mini")
+    DEFAULT_GEMINI_MODEL = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
     DEFAULT_OPENROUTER_MODEL = os.getenv("DEFAULT_OPENROUTER_MODEL", "nvidia/nemotron-3.5-lightning:free")
-    DEFAULT_GEMINI_MODEL = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.5-flash-lite")
-    DEFAULT_GROQ_MODEL = os.getenv("DEFAULT_GROQ_MODEL", "openai/gpt-oss-20b")
-    DEFAULT_OPENAI_MODEL = os.getenv("DEFAULT_OPENAI_MODEL", "gpt-4o-mini")
 
     # Memory Settings
     MAX_SHORT_TERM_MESSAGES = int(os.getenv("MAX_SHORT_TERM_MESSAGES", "20"))
@@ -55,21 +57,20 @@ class Config:
     
     # Assistant Persona
     ASSISTANT_NAME = os.getenv("ASSISTANT_NAME", "Aura")
-    USER_NAME = os.getenv("USER_NAME", "User")
+    USER_NAME = os.getenv("USER_NAME", "Faizan")
     
     @classmethod
     def get_active_model(cls, provider: str = None) -> str:
         prov = provider or cls.DEFAULT_PROVIDER
-        if prov == "openrouter":
-            return cls.DEFAULT_OPENROUTER_MODEL
+        if prov == "groq":
+            return cls.DEFAULT_GROQ_MODEL
         elif prov == "gemini":
             return cls.DEFAULT_GEMINI_MODEL
-        elif prov == "groq":
-            return cls.DEFAULT_GROQ_MODEL
-        elif prov == "openai":
-            return cls.DEFAULT_OPENAI_MODEL
+        elif prov == "openrouter":
+            return cls.DEFAULT_OPENROUTER_MODEL
         elif prov == "ollama":
             return cls.OLLAMA_MODEL
-        return "groq/compound-mini"
+        return cls.DEFAULT_GROQ_MODEL
 
 config = Config()
+

@@ -24,6 +24,7 @@ from backend.rag.vector_store import vector_store
 from backend.agent.orchestrator import agent_orchestrator
 from backend.tools.notes import add_note, list_notes, complete_note, delete_note
 from backend.tools.image_studio import generate_ai_image, retouch_image_file
+from backend.auth.supabase_client import supabase_auth
 from backend.llm.client import llm_client
 
 # Initialize Database
@@ -76,13 +77,24 @@ class SettingsUpdateRequest(BaseModel):
     openrouter_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     groq_api_key: Optional[str] = None
-    openai_api_key: Optional[str] = None
     openrouter_model: Optional[str] = None
     gemini_model: Optional[str] = None
     groq_model: Optional[str] = None
-    openai_model: Optional[str] = None
+
+class AuthSignupRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    role: Optional[str] = "Creator"
+    gender: Optional[str] = "male"
+    avatar_url: Optional[str] = None
+
+class AuthLoginRequest(BaseModel):
+    email: str
+    password: str
 
 # --- Chat & Session Endpoints ---
+
 
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
@@ -353,7 +365,7 @@ async def api_retouch_image(
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# --- Settings Endpoints ---
+# --- Settings & Model Provider Endpoints ---
 
 @app.get("/api/settings")
 def get_settings():
@@ -361,7 +373,6 @@ def get_settings():
     openrouter_key = get_setting("OPENROUTER_API_KEY", config.OPENROUTER_API_KEY)
     gemini_key = get_setting("GEMINI_API_KEY", config.GEMINI_API_KEY)
     groq_key = get_setting("GROQ_API_KEY", config.GROQ_API_KEY)
-    openai_key = get_setting("OPENAI_API_KEY", config.OPENAI_API_KEY)
 
     def mask(k: str) -> str:
         if not k or len(k) < 8:
@@ -370,18 +381,37 @@ def get_settings():
 
     return {
         "active_provider": prov,
-        "openrouter_configured": bool(openrouter_key),
-        "gemini_configured": bool(gemini_key),
+        "default_guest_provider": "groq",
         "groq_configured": bool(groq_key),
-        "openai_configured": bool(openai_key),
-        "openrouter_masked": mask(openrouter_key),
-        "gemini_masked": mask(gemini_key),
+        "gemini_configured": bool(gemini_key),
+        "openrouter_configured": bool(openrouter_key),
         "groq_masked": mask(groq_key),
-        "openai_masked": mask(openai_key),
-        "openrouter_model": get_setting("OPENROUTER_MODEL", config.DEFAULT_OPENROUTER_MODEL),
-        "gemini_model": get_setting("GEMINI_MODEL", config.DEFAULT_GEMINI_MODEL),
+        "gemini_masked": mask(gemini_key),
+        "openrouter_masked": mask(openrouter_key),
         "groq_model": get_setting("GROQ_MODEL", config.DEFAULT_GROQ_MODEL),
-        "openai_model": get_setting("OPENAI_MODEL", config.DEFAULT_OPENAI_MODEL),
+        "gemini_model": get_setting("GEMINI_MODEL", config.DEFAULT_GEMINI_MODEL),
+        "openrouter_model": get_setting("OPENROUTER_MODEL", config.DEFAULT_OPENROUTER_MODEL),
+        "supabase_configured": supabase_auth.is_configured(),
+        "byok_instructions": {
+            "gemini": {
+                "name": "Google Gemini 2.5 Flash",
+                "free_tier": True,
+                "url": "https://aistudio.google.com/app/apikey",
+                "instructions": "1. Visit https://aistudio.google.com/app/apikey\n2. Sign in with Google\n3. Click 'Create API key'\n4. Paste the key below to unlock Gemini 2.5 Flash!"
+            },
+            "groq": {
+                "name": "Groq Cloud (Default Free Public Engine)",
+                "free_tier": True,
+                "url": "https://console.groq.com/keys",
+                "instructions": "Groq is provided free by default! Anyone can use it without logging in."
+            },
+            "openrouter": {
+                "name": "OpenRouter",
+                "free_tier": True,
+                "url": "https://openrouter.ai/keys",
+                "instructions": "Get free API keys at https://openrouter.ai/keys."
+            }
+        }
     }
 
 def update_env_file(updates: Dict[str, str]):
@@ -423,38 +453,30 @@ def update_settings(req: SettingsUpdateRequest):
     if req.active_provider:
         set_setting("ACTIVE_PROVIDER", req.active_provider)
         env_updates["DEFAULT_PROVIDER"] = req.active_provider
-    if req.openrouter_api_key is not None and req.openrouter_api_key.strip():
-        val = req.openrouter_api_key.strip()
-        set_setting("OPENROUTER_API_KEY", val)
-        env_updates["OPENROUTER_API_KEY"] = val
-        os.environ["OPENROUTER_API_KEY"] = val
-    if req.gemini_api_key is not None and req.gemini_api_key.strip():
-        val = req.gemini_api_key.strip()
-        set_setting("GEMINI_API_KEY", val)
-        env_updates["GEMINI_API_KEY"] = val
-        os.environ["GEMINI_API_KEY"] = val
     if req.groq_api_key is not None and req.groq_api_key.strip():
         val = req.groq_api_key.strip()
         set_setting("GROQ_API_KEY", val)
         env_updates["GROQ_API_KEY"] = val
         os.environ["GROQ_API_KEY"] = val
-    if req.openai_api_key is not None and req.openai_api_key.strip():
-        val = req.openai_api_key.strip()
-        set_setting("OPENAI_API_KEY", val)
-        env_updates["OPENAI_API_KEY"] = val
-        os.environ["OPENAI_API_KEY"] = val
-    if req.openrouter_model:
-        set_setting("OPENROUTER_MODEL", req.openrouter_model)
-        env_updates["DEFAULT_OPENROUTER_MODEL"] = req.openrouter_model
-    if req.gemini_model:
-        set_setting("GEMINI_MODEL", req.gemini_model)
-        env_updates["DEFAULT_GEMINI_MODEL"] = req.gemini_model
+    if req.gemini_api_key is not None and req.gemini_api_key.strip():
+        val = req.gemini_api_key.strip()
+        set_setting("GEMINI_API_KEY", val)
+        env_updates["GEMINI_API_KEY"] = val
+        os.environ["GEMINI_API_KEY"] = val
+    if req.openrouter_api_key is not None and req.openrouter_api_key.strip():
+        val = req.openrouter_api_key.strip()
+        set_setting("OPENROUTER_API_KEY", val)
+        env_updates["OPENROUTER_API_KEY"] = val
+        os.environ["OPENROUTER_API_KEY"] = val
     if req.groq_model:
         set_setting("GROQ_MODEL", req.groq_model)
         env_updates["DEFAULT_GROQ_MODEL"] = req.groq_model
-    if req.openai_model:
-        set_setting("OPENAI_MODEL", req.openai_model)
-        env_updates["DEFAULT_OPENAI_MODEL"] = req.openai_model
+    if req.gemini_model:
+        set_setting("GEMINI_MODEL", req.gemini_model)
+        env_updates["DEFAULT_GEMINI_MODEL"] = req.gemini_model
+    if req.openrouter_model:
+        set_setting("OPENROUTER_MODEL", req.openrouter_model)
+        env_updates["DEFAULT_OPENROUTER_MODEL"] = req.openrouter_model
 
     if env_updates:
         try:
@@ -462,9 +484,45 @@ def update_settings(req: SettingsUpdateRequest):
         except Exception as e:
             print(f"[*] Could not write to .env: {e}")
 
-    return {"status": "saved"}
+    return {"status": "success", "message": "Settings updated successfully"}
+
+# --- Supabase & User Authentication Endpoints ---
+
+@app.post("/api/auth/signup")
+async def auth_signup_endpoint(req: AuthSignupRequest):
+    """Register a new user account via Supabase Auth or local deployment engine."""
+    return await supabase_auth.signup(
+        email=req.email,
+        password=req.password,
+        name=req.name,
+        role=req.role or "Creator",
+        gender=req.gender or "male",
+        avatar_url=req.avatar_url
+    )
+
+@app.post("/api/auth/login")
+async def auth_login_endpoint(req: AuthLoginRequest):
+    """Sign in an existing user via Supabase Auth."""
+    return await supabase_auth.login(
+        email=req.email,
+        password=req.password
+    )
+
+@app.get("/api/auth/status")
+def auth_status_endpoint():
+    """Check user login state, Supabase Cloud configuration, and active guest engine."""
+    active_user = get_active_user()
+    return {
+        "logged_in": True,
+        "user": active_user,
+        "supabase_configured": supabase_auth.is_configured(),
+        "supabase_url": config.SUPABASE_URL,
+        "default_guest_provider": "groq",
+        "default_guest_model": config.DEFAULT_GROQ_MODEL
+    }
 
 # --- User Profile & Authentication Endpoints ---
+
 
 class UserRegisterRequest(BaseModel):
     name: str

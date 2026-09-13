@@ -15,14 +15,12 @@ class LLMClient:
         db_key = get_setting(f"{provider.upper()}_API_KEY", "")
         if db_key:
             return db_key
-        if provider == "openrouter":
-            return config.OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY", "")
+        if provider == "groq":
+            return config.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
         elif provider == "gemini":
             return config.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "")
-        elif provider == "groq":
-            return config.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
-        elif provider == "openai":
-            return config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
+        elif provider == "openrouter":
+            return config.OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY", "")
         return ""
 
     def get_active_provider(self) -> str:
@@ -119,8 +117,8 @@ class LLMClient:
     ) -> Dict[str, Any]:
         primary_prov = provider or self.get_active_provider()
         
-        # Priority order of providers: primary choice first, then other available providers
-        all_providers = ["groq", "openrouter", "gemini", "openai", "ollama"]
+        # Priority order of providers: primary choice first, then other available free/BYOK providers
+        all_providers = ["groq", "gemini", "openrouter", "ollama"]
         ordered_providers = [primary_prov] + [p for p in all_providers if p != primary_prov]
 
         last_error = ""
@@ -135,12 +133,10 @@ class LLMClient:
             try:
                 if prov == "groq":
                     res = await asyncio.to_thread(self._generate_groq, messages, system_prompt, mod, key, tools_enabled)
-                elif prov == "openrouter":
-                    res = await asyncio.to_thread(self._generate_openrouter, messages, system_prompt, mod, key, tools_enabled)
                 elif prov == "gemini":
                     res = await asyncio.to_thread(self._generate_gemini, messages, system_prompt, mod, key, tools_enabled)
-                elif prov == "openai":
-                    res = await asyncio.to_thread(self._generate_openai, messages, system_prompt, mod, key, tools_enabled)
+                elif prov == "openrouter":
+                    res = await asyncio.to_thread(self._generate_openrouter, messages, system_prompt, mod, key, tools_enabled)
                 elif prov == "ollama":
                     res = await self._generate_ollama(messages, system_prompt, mod, tools_enabled)
                 else:

@@ -959,22 +959,63 @@
       </div>
       <div class="modal-body">
         <div class="free-tier-banner">
-          <i class="fa-solid fa-sparkles"></i>
+          <i class="fa-solid fa-bolt text-amber"></i>
           <div>
-            <strong>100% Free AI Engines Supported</strong>
-            <p>OpenRouter, Google Gemini & Groq provide free models with zero credit card needed.</p>
+            <strong>100% Free Public AI Access (Zero Cost & Zero Quota)</strong>
+            <p><strong>Groq is the default public engine</strong> — open to all visitors 24/7 with zero login needed. To unlock Google Gemini 2.5 Flash, simply bring your free API key!</p>
           </div>
         </div>
 
         <form id="settings-form">
           <div class="form-row">
-            <label for="setting-provider">Active LLM Provider</label>
+            <label for="setting-provider">Active LLM Engine</label>
             <select id="setting-provider" class="clean-select full-width">
-              <option value="openrouter">OpenRouter (100% Free Models: Llama 3.3, DeepSeek R1)</option>
-              <option value="gemini">Google Gemini (Gemini 2.5 Flash Lite — Free)</option>
-              <option value="groq">Groq (Llama-3.3 — Free & Ultra-Fast)</option>
-              <option value="ollama">Ollama (Offline & Local)</option>
-              <option value="openai">OpenAI (GPT-4o)</option>
+              <option value="groq">⚡ Groq Cloud (Default Free Public Engine — Instant for Everyone)</option>
+              <option value="gemini">💎 Google Gemini 2.5 Flash (Bring Your Own Free Key)</option>
+              <option value="openrouter">🌐 OpenRouter (Free Tier Models)</option>
+              <option value="ollama">🦙 Ollama (Offline & Local)</option>
+            </select>
+          </div>
+
+          <!-- Groq Key & Model (Default) -->
+          <div class="form-row" id="group-groq">
+            <div class="label-split">
+              <label for="setting-groq-key">Groq API Key (Included by default for all visitors)</label>
+              <a href="https://console.groq.com/keys" target="_blank" class="link-external">
+                Get Your Own Key (console.groq.com) <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+            <input type="password" id="setting-groq-key" class="clean-input full-width" placeholder="gsk_..." />
+            <span class="hint-text" id="groq-status-hint">Active & Verified Free</span>
+
+            <label for="setting-groq-model" style="margin-top: 8px; font-size: 0.8rem;">Groq Free Model</label>
+            <select id="setting-groq-model" class="clean-select full-width">
+              <option value="groq/compound-mini">Compound Mini (Fastest, Verified Free)</option>
+              <option value="openai/gpt-oss-20b">GPT-OSS 20B (Free on Groq)</option>
+              <option value="qwen/qwen3.6-27b">Qwen 3.6 27B (Free)</option>
+              <option value="groq/compound">Groq Compound Full (Free)</option>
+            </select>
+          </div>
+
+          <!-- Gemini Key & BYOK Instructions -->
+          <div class="form-row" id="group-gemini">
+            <div class="byok-banner" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; font-size: 0.76rem; color: #166534;">
+              <i class="fa-solid fa-circle-info"></i> <strong>Bring Your Own Key (BYOK):</strong> Google offers a generous free tier for Gemini 2.5 Flash with no credit card required.
+            </div>
+            <div class="label-split">
+              <label for="setting-gemini-key">Google Gemini API Key</label>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link-external">
+                Get Free Key (Google AI Studio) <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+            <input type="password" id="setting-gemini-key" class="clean-input full-width" placeholder="AQ.Ab8RN... or AIzaSy..." />
+            <span class="hint-text" id="gemini-status-hint">Configured</span>
+
+            <label for="setting-gemini-model" style="margin-top: 8px; font-size: 0.8rem;">Gemini Free Model</label>
+            <select id="setting-gemini-model" class="clean-select full-width">
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended, High Speed)</option>
+              <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Lightweight)</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy)</option>
             </select>
           </div>
 
@@ -997,46 +1038,8 @@
             </select>
           </div>
 
-          <!-- Gemini Key -->
-          <div class="form-row" id="group-gemini">
-            <div class="label-split">
-              <label for="setting-gemini-key">Google Gemini API Key</label>
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link-external">
-                Get Free Key (Google AI Studio) <i class="fa-solid fa-arrow-up-right-from-square"></i>
-              </a>
-            </div>
-            <input type="password" id="setting-gemini-key" class="clean-input full-width" placeholder="AQ.Ab8RN... or AIzaSy..." />
-            <span class="hint-text" id="gemini-status-hint">Configured</span>
-          </div>
-
-          <!-- Groq Key & Model -->
-          <div class="form-row" id="group-groq">
-            <div class="label-split">
-              <label for="setting-groq-key">Groq API Key (Free, Ultra-Fast)</label>
-              <a href="https://console.groq.com/keys" target="_blank" class="link-external">
-                Get Free Key (Groq Console) <i class="fa-solid fa-arrow-up-right-from-square"></i>
-              </a>
-            </div>
-            <input type="password" id="setting-groq-key" class="clean-input full-width" placeholder="gsk_..." />
-            <span class="hint-text" id="groq-status-hint">Not configured</span>
-
-            <label for="setting-groq-model" style="margin-top: 8px; font-size: 0.8rem;">Groq Free Model</label>
-            <select id="setting-groq-model" class="clean-select full-width">
-              <option value="groq/compound-mini">Compound Mini (Fastest, Verified Free)</option>
-              <option value="openai/gpt-oss-20b">GPT-OSS 20B (OpenAI on Groq Free)</option>
-              <option value="qwen/qwen3.6-27b">Qwen 3.6 27B (Free)</option>
-              <option value="groq/compound">Groq Compound Full (Free)</option>
-            </select>
-          </div>
-
-          <!-- OpenAI Key -->
-          <div class="form-row" id="group-openai">
-            <label for="setting-openai-key">OpenAI API Key (Optional)</label>
-            <input type="password" id="setting-openai-key" class="clean-input full-width" placeholder="sk-..." />
-            <span class="hint-text" id="openai-status-hint">Not configured</span>
-          </div>
-
           <div class="modal-footer-actions">
+
             <button type="button" class="btn-cancel close-modal-btn" data-modal="settings-modal">Cancel</button>
             <button type="submit" class="btn-accent-pill" id="save-settings-btn">Save Settings</button>
           </div>
