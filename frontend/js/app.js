@@ -1039,8 +1039,30 @@ function appendMessageUI(role, content, toolCalls = [], citations = []) {
   row.className = `chat-message-row ${role}`;
 
   const avatar = document.createElement("div");
-  avatar.className = "chat-avatar";
-  avatar.innerHTML = role === "assistant" ? '<i class="fa-solid fa-sparkles"></i>' : '<i class="fa-solid fa-user"></i>';
+  avatar.className = `chat-avatar ${role}`;
+
+  if (role === "assistant") {
+    avatar.innerHTML = `
+      <svg class="aura-chat-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="auraLogoStar" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#cffafe"/>
+          </linearGradient>
+        </defs>
+        <path d="M12 1.5C12 7.2 7.2 12 1.5 12C7.2 12 12 16.8 12 22.5C12 16.8 16.8 12 22.5 12C16.8 12 12 7.2 12 1.5Z" fill="url(#auraLogoStar)"/>
+        <circle cx="12" cy="12" r="2.8" fill="#1d4ed8"/>
+        <circle cx="12" cy="12" r="1.4" fill="#ffffff"/>
+        <circle cx="19" cy="5" r="1.4" fill="#ffffff"/>
+      </svg>
+    `;
+    avatar.title = "Aura AI Assistant";
+  } else {
+    const userAvatarImg = document.getElementById("user-avatar-img");
+    const userAvatarSrc = (userAvatarImg && userAvatarImg.src) ? userAvatarImg.src : DEFAULT_MALE_AVATAR;
+    avatar.innerHTML = `<img src="${userAvatarSrc}" class="chat-user-avatar-img" alt="You" />`;
+    avatar.title = "You";
+  }
 
   const bubble = document.createElement("div");
   bubble.className = "chat-bubble";
