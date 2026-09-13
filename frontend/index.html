@@ -33,12 +33,12 @@
     <!-- Window Header / Browser Chrome -->
     <div class="window-header">
       <div class="window-controls">
-        <span class="control-dot close"></span>
-        <span class="control-dot minimize"></span>
-        <span class="control-dot maximize"></span>
+        <span class="control-dot close" id="win-close-btn" title="Close / Return to Dashboard"></span>
+        <span class="control-dot minimize" id="win-minimize-btn" title="Minimize / Toggle Sidebar"></span>
+        <span class="control-dot maximize" id="win-maximize-btn" title="Maximize / Fullscreen View"></span>
         <div class="header-nav-arrows">
           <i class="fa-solid fa-chevron-left" id="nav-back-btn" title="Back to Dashboard"></i>
-          <i class="fa-solid fa-chevron-right"></i>
+          <i class="fa-solid fa-chevron-right" id="nav-forward-btn" title="Forward to Active Chat"></i>
         </div>
       </div>
 
@@ -55,9 +55,6 @@
         </button>
         <button class="win-btn-icon" id="fullscreen-btn" title="Toggle Fullscreen View">
           <i class="fa-solid fa-expand"></i>
-        </button>
-        <button class="win-btn-icon" id="quick-settings-btn" title="Settings">
-          <i class="fa-solid fa-sliders"></i>
         </button>
         <button class="win-btn" id="quick-profile-btn" title="User Profile & Account">
           <img id="header-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="header-avatar-mini" />
@@ -517,6 +514,10 @@
                         <input type="radio" name="studio-mode" value="blur" checked />
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Blurred Background
                       </label>
+                      <label class="fitting-mode-btn" id="mode-solid">
+                        <input type="radio" name="studio-mode" value="solid" />
+                        <i class="fa-solid fa-palette"></i> Solid Color BG
+                      </label>
                       <label class="fitting-mode-btn" id="mode-circle">
                         <input type="radio" name="studio-mode" value="circle" />
                         <i class="fa-solid fa-circle"></i> Circle Mask (DP)
@@ -529,6 +530,30 @@
                         <input type="radio" name="studio-mode" value="fit" />
                         <i class="fa-solid fa-compress"></i> Letterbox / Pad
                       </label>
+                    </div>
+                  </div>
+
+                  <!-- Custom Background Color Picker Row -->
+                  <div class="studio-color-picker-box" id="row-bg-color" style="display: none;">
+                    <div class="color-picker-top">
+                      <span class="picker-title"><i class="fa-solid fa-palette"></i> Canvas Background Color</span>
+                      <div class="picker-input-wrapper">
+                        <input type="color" id="studio-bg-color-picker" value="#ffffff" title="Pick any custom background color" />
+                        <span id="label-bg-hex">#ffffff</span>
+                      </div>
+                    </div>
+                    <div class="quick-swatches">
+                      <button type="button" class="swatch-btn active" data-color="#ffffff" style="background:#ffffff; border:1px solid #cbd5e1;" title="White"></button>
+                      <button type="button" class="swatch-btn" data-color="#000000" style="background:#000000;" title="Black"></button>
+                      <button type="button" class="swatch-btn" data-color="#0f172a" style="background:#0f172a;" title="Slate Dark"></button>
+                      <button type="button" class="swatch-btn" data-color="#f8fafc" style="background:#f8fafc; border:1px solid #cbd5e1;" title="Soft White"></button>
+                      <button type="button" class="swatch-btn" data-color="#2563eb" style="background:#2563eb;" title="Royal Blue"></button>
+                      <button type="button" class="swatch-btn" data-color="#7c3aed" style="background:#7c3aed;" title="Purple"></button>
+                      <button type="button" class="swatch-btn" data-color="#059669" style="background:#059669;" title="Emerald"></button>
+                      <button type="button" class="swatch-btn" data-color="#ea580c" style="background:#ea580c;" title="Orange"></button>
+                      <button type="button" class="swatch-btn" data-color="#e11d48" style="background:#e11d48;" title="Crimson"></button>
+                      <button type="button" class="swatch-btn" data-color="#fef08a" style="background:#fef08a;" title="Soft Yellow"></button>
+                      <button type="button" class="swatch-btn" data-color="#bae6fd" style="background:#bae6fd;" title="Sky Blue"></button>
                     </div>
                   </div>
 

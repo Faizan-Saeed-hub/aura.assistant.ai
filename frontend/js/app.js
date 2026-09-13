@@ -32,9 +32,63 @@ function initVoiceToggleUI() {
 
 // --- Event Binding ---
 function bindEvents() {
-  // Navigation
+  // Window Controls (Red, Yellow, Green Dots)
+  const winCloseBtn = document.getElementById("win-close-btn");
+  if (winCloseBtn) {
+    winCloseBtn.addEventListener("click", () => {
+      switchView("dashboard");
+      stopVoiceRecording();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      document.querySelectorAll(".modal-overlay.open").forEach(m => m.classList.remove("open"));
+      showToast("🏠 Returned to Home Dashboard");
+    });
+  }
+
+  const winMinimizeBtn = document.getElementById("win-minimize-btn");
+  if (winMinimizeBtn) {
+    winMinimizeBtn.addEventListener("click", () => {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        const isCollapsed = sidebar.classList.toggle("collapsed");
+        showToast(isCollapsed ? "◀ Sidebar collapsed (expanded view)" : "▶ Sidebar restored");
+      }
+    });
+  }
+
+  const winMaximizeBtn = document.getElementById("win-maximize-btn");
+  if (winMaximizeBtn) {
+    winMaximizeBtn.addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
+    });
+  }
+
+  // Navigation Arrows (< and >)
+  const navBackBtn = document.getElementById("nav-back-btn");
+  if (navBackBtn) {
+    navBackBtn.addEventListener("click", () => {
+      if (activeView !== "dashboard") {
+        switchView("dashboard");
+      }
+    });
+  }
+
+  const navForwardBtn = document.getElementById("nav-forward-btn");
+  if (navForwardBtn) {
+    navForwardBtn.addEventListener("click", () => {
+      if (currentSessionId) {
+        switchView("chat");
+      } else {
+        createNewChat();
+      }
+    });
+  }
+
+  // Navigation Buttons
   document.getElementById("nav-home-btn").addEventListener("click", () => switchView("dashboard"));
-  document.getElementById("nav-back-btn").addEventListener("click", () => switchView("dashboard"));
   document.getElementById("nav-new-chat-btn").addEventListener("click", createNewChat);
   document.getElementById("new-chat-top-btn").addEventListener("click", createNewChat);
   document.getElementById("refresh-page-btn").addEventListener("click", () => window.location.reload());
@@ -81,7 +135,6 @@ function bindEvents() {
 
   const btnImageBack = document.getElementById("btn-image-back");
   if (btnImageBack) btnImageBack.addEventListener("click", () => switchView("dashboard"));
-  setupModal("quick-settings-btn", "settings-modal", loadSettings);
   setupModal("open-settings-promo-btn", "settings-modal", loadSettings);
 
   // Profile Modal & Account Creation
@@ -1204,14 +1257,61 @@ window.openImageInStudio = function(imageUrl) {
 };
 
 function showActivity(msg) {
-  const bar = document.getElementById("agent-activity-bar");
-  const text = document.getElementById("activity-text");
-  text.textContent = msg;
-  bar.style.display = "flex";
+  showThinkingDots();
 }
 
 function hideActivity() {
-  document.getElementById("agent-activity-bar").style.display = "none";
+  removeThinkingDots();
+  const bar = document.getElementById("agent-activity-bar");
+  if (bar) bar.style.display = "none";
+}
+
+function showThinkingDots() {
+  const container = document.getElementById("messages-container");
+  if (!container) return;
+  removeThinkingDots();
+
+  const row = document.createElement("div");
+  row.className = "chat-message-row assistant thinking-row";
+  row.id = "chat-thinking-indicator";
+
+  const avatar = document.createElement("div");
+  avatar.className = "chat-avatar assistant";
+  avatar.title = "Aura AI Assistant";
+  avatar.innerHTML = `
+    <svg class="aura-chat-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="auraLogoStarThink" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#cffafe"/>
+        </linearGradient>
+      </defs>
+      <path d="M12 1.5C12 7.2 7.2 12 1.5 12C7.2 12 12 16.8 12 22.5C12 16.8 16.8 12 22.5 12C16.8 12 12 7.2 12 1.5Z" fill="url(#auraLogoStarThink)"/>
+      <circle cx="12" cy="12" r="2.8" fill="#1d4ed8"/>
+      <circle cx="12" cy="12" r="1.4" fill="#ffffff"/>
+      <circle cx="19" cy="5" r="1.4" fill="#ffffff"/>
+    </svg>
+  `;
+
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble thinking-bubble";
+  bubble.innerHTML = `
+    <div class="thinking-dots-container" title="Aura is thinking...">
+      <span class="thinking-dot"></span>
+      <span class="thinking-dot"></span>
+      <span class="thinking-dot"></span>
+    </div>
+  `;
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  container.appendChild(row);
+  scrollToBottom();
+}
+
+function removeThinkingDots() {
+  const existing = document.getElementById("chat-thinking-indicator");
+  if (existing) existing.remove();
 }
 
 function scrollToBottom() {
@@ -2087,6 +2187,7 @@ let studioBlur = 25;
 let studioPanX = 0;
 let studioPanY = 0;
 let studioRotation = 0;
+let studioCustomBgColor = "#ffffff";
 let imageStudioInitialized = false;
 
 // Retouch Suite State (Non-destructive, expression & geometry strictly preserved)
@@ -2484,6 +2585,32 @@ function initImageStudio() {
     });
   }
 
+  // Canvas Custom Background Color Picker & Swatches
+  const colorPicker = document.getElementById("studio-bg-color-picker");
+  const colorHexLabel = document.getElementById("label-bg-hex");
+  if (colorPicker) {
+    colorPicker.addEventListener("input", (e) => {
+      studioCustomBgColor = e.target.value;
+      if (colorHexLabel) colorHexLabel.textContent = studioCustomBgColor.toUpperCase();
+      renderStudioCanvas();
+    });
+  }
+
+  const swatchBtns = document.querySelectorAll(".swatch-btn");
+  swatchBtns.forEach((swatch) => {
+    swatch.addEventListener("click", () => {
+      const col = swatch.getAttribute("data-color");
+      if (col) {
+        studioCustomBgColor = col;
+        if (colorPicker) colorPicker.value = col;
+        if (colorHexLabel) colorHexLabel.textContent = col.toUpperCase();
+        swatchBtns.forEach((s) => s.classList.remove("active"));
+        swatch.classList.add("active");
+        renderStudioCanvas();
+      }
+    });
+  });
+
   // --- AI Retouch Suite Event Listeners ---
   const toggleDarkCircles = document.getElementById("toggle-dark-circles");
   const rowDarkCircles = document.getElementById("row-dark-circles-slider");
@@ -2622,6 +2749,9 @@ function setStudioMode(mode) {
 
   const blurRow = document.getElementById("row-blur-slider");
   if (blurRow) blurRow.style.display = (mode === "blur") ? "flex" : "none";
+
+  const colorRow = document.getElementById("row-bg-color");
+  if (colorRow) colorRow.style.display = (mode === "solid" || mode === "fit" || mode === "circle") ? "block" : "none";
 }
 
 function loadStudioImageFromFile(file) {
@@ -2683,11 +2813,14 @@ function renderStudioCanvas() {
     // Darken overlay for depth
     ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
     ctx.fillRect(0, 0, targetW, targetH);
+  } else if (studioMode === "solid") {
+    ctx.fillStyle = studioCustomBgColor || "#ffffff";
+    ctx.fillRect(0, 0, targetW, targetH);
   } else if (studioMode === "circle") {
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = studioCustomBgColor || "#ffffff";
     ctx.fillRect(0, 0, targetW, targetH);
   } else if (studioMode === "fit") {
-    ctx.fillStyle = "#0f172a";
+    ctx.fillStyle = studioCustomBgColor || "#0f172a";
     ctx.fillRect(0, 0, targetW, targetH);
   }
 
@@ -2707,7 +2840,7 @@ function renderStudioCanvas() {
   let scale = 1.0;
   if (studioMode === "crop") {
     scale = Math.max(targetW / studioImage.width, targetH / studioImage.height) * studioZoom;
-  } else if (studioMode === "fit") {
+  } else if (studioMode === "fit" || studioMode === "solid") {
     scale = Math.min(targetW / studioImage.width, targetH / studioImage.height) * studioZoom;
   } else {
     // Blur or Circle: fit cleanly into view
