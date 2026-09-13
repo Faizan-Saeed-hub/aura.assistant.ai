@@ -330,12 +330,13 @@ async def api_generate_image(req: ImageGenRequest):
 @app.post("/api/image/retouch")
 async def api_retouch_image(
     file: UploadFile = File(...),
-    preset: str = Form("glow"),
-    glow: int = Form(35),
-    dark_circles: int = Form(65),
-    smooth: int = Form(25),
-    warmth: int = Form(10),
-    crop_aspect: Optional[str] = Form(None)
+    preset: str = Form("custom"),
+    glow: int = Form(0),
+    dark_circles: int = Form(0),
+    smooth: int = Form(0),
+    warmth: int = Form(0),
+    crop_aspect: Optional[str] = Form(None),
+    bw: bool = Form(False)
 ):
     """Upload photo and apply non-destructive face glow, dark circles lift, skin softening, and aspect crop."""
     try:
@@ -357,13 +358,29 @@ async def api_retouch_image(
             dark_circles=dark_circles,
             smooth=smooth,
             warmth=warmth,
-            crop_aspect=crop_aspect
+            crop_aspect=crop_aspect,
+            bw=bw
         )
         if res.get("success"):
             res["original_url"] = f"/data/uploads/{orig_filename}"
+            res["download_url"] = f"/api/image/download/{res['filename']}"
         return res
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+@app.get("/api/image/download/{filename}")
+def download_retouched_image(filename: str):
+    """Serve image with attachment headers so browser initiates clean download."""
+    clean_name = os.path.basename(filename)
+    file_path = UPLOADS_DIR / clean_name
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Requested image file was not found on server")
+    return FileResponse(
+        str(file_path),
+        media_type="image/jpeg",
+        filename=clean_name,
+        headers={"Content-Disposition": f'attachment; filename="{clean_name}"'}
+    )
 
 # --- Settings & Model Provider Endpoints ---
 
@@ -603,6 +620,8 @@ def update_profile(req: UserProfileUpdateRequest):
 # --- Static Frontend & Media Serving ---
 
 app.mount("/avatars", StaticFiles(directory=str(AVATARS_DIR)), name="avatars")
+app.mount("/data/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="data_uploads")
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 @app.get("/")

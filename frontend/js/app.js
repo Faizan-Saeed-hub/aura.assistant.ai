@@ -436,13 +436,13 @@ function bindEvents() {
             attachmentPreviewImg.style.display = "block";
           }
           if (attachmentFileName) attachmentFileName.textContent = file.name;
-          if (attachmentFileDesc) attachmentFileDesc.textContent = `${(file.size / 1024).toFixed(0)} KB • Photo Attached`;
+          updateRetouchAttachmentDesc(file);
           if (chatRetouchPresets) chatRetouchPresets.style.display = "flex";
           if (chatAttachmentTray) chatAttachmentTray.style.display = "flex";
 
           const inputEl = document.getElementById("user-input");
           if (inputEl && !inputEl.value.trim()) {
-            inputEl.placeholder = "Prompt (e.g. 'Natural face glow & WhatsApp DP crop') or press Send...";
+            inputEl.placeholder = "Optional prompt or press Send to apply selected enhancements...";
           }
           if (inputEl) inputEl.focus();
         };
@@ -451,11 +451,11 @@ function bindEvents() {
     });
   }
 
+  // Multi-Select Retouch Enhancement Pills
   document.querySelectorAll(".chat-preset-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
-      document.querySelectorAll(".chat-preset-chip").forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      activeChatRetouchPreset = chip.dataset.preset;
+      chip.classList.toggle("active");
+      updateRetouchAttachmentDesc(activeChatAttachedImage);
     });
   });
 
@@ -868,8 +868,23 @@ async function handleSendMessage() {
   // 2. Handle Attached Photo Retouching if active
   if (activeChatAttachedImage) {
     const photoFile = activeChatAttachedImage;
-    const preset = activeChatRetouchPreset || "glow";
-    const userPrompt = text || `Retouch this photo with ${preset.toUpperCase()} preset and natural face glow.`;
+    const activeChips = Array.from(document.querySelectorAll(".chat-preset-chip.active")).map(c => c.dataset.feature || c.dataset.preset);
+    const hasGlow = activeChips.includes("glow");
+    const hasUndereye = activeChips.includes("undereye");
+    const hasSmooth = activeChips.includes("smooth");
+    const hasCrop = activeChips.includes("crop_dp");
+    const hasWarmth = activeChips.includes("warmth");
+    const hasBw = activeChips.includes("bw");
+
+    const descList = [];
+    if (hasGlow) descList.push("✨ Face Glow");
+    if (hasUndereye) descList.push("👁️ Remove Dark Circles");
+    if (hasSmooth) descList.push("🧴 Smooth Skin");
+    if (hasCrop) descList.push("📷 1:1 WhatsApp DP");
+    if (hasWarmth) descList.push("☀️ Warm Tone");
+    if (hasBw) descList.push("🖤 B&W Studio");
+
+    const userPrompt = text || `Retouch this photo with: ${descList.join(", ") || "Natural Enhance"}.`;
 
     inputEl.value = "";
     inputEl.style.height = "auto";
@@ -899,10 +914,15 @@ async function handleSendMessage() {
     try {
       const formData = new FormData();
       formData.append("file", photoFile);
-      formData.append("preset", preset);
-      if (preset === "crop_dp") {
+      formData.append("preset", "custom");
+      formData.append("glow", hasGlow ? 45 : 0);
+      formData.append("dark_circles", hasUndereye ? 80 : 0);
+      formData.append("smooth", hasSmooth ? 35 : 0);
+      formData.append("warmth", hasWarmth ? 15 : 0);
+      if (hasCrop) {
         formData.append("crop_aspect", "1:1");
       }
+      formData.append("bw", hasBw ? "true" : "false");
 
       const res = await fetch("/api/image/retouch", {
         method: "POST",
@@ -912,15 +932,21 @@ async function handleSendMessage() {
       hideActivity();
       sendBtn.disabled = false;
 
-      if (data.success && data.url) {
+      if (data.success && (data.url || data.download_url)) {
+        const previewUrl = data.url;
+        const dlUrl = data.download_url || `/api/image/download/${data.filename}`;
+        const activeSummary = descList.length > 0 ? descList.join(" + ") : "Natural Polish";
+        
         const assistantText = `✨ **Photo Retouched Successfully!**\n\n` +
-          `Applied **${preset.toUpperCase()}** preset (${data.details || 'Natural lighting & skin enhance'}).\n\n` +
+          `Applied **${activeSummary}** (${data.details || 'Enhanced lighting & tone'}).\n\n` +
           `<div class="chat-image-card">` +
-            `<div class="chat-image-preview"><img src="${data.url}" alt="Retouched Photo" /></div>` +
+            `<div class="chat-image-preview">` +
+              `<img src="${previewUrl}" alt="Retouched Photo" onerror="this.onerror=null; this.src='${dlUrl}';" />` +
+            `</div>` +
             `<div class="chat-image-actions">` +
-              `<a href="${data.url}" download="${data.filename}" class="btn-chat-img-action primary"><i class="fa-solid fa-download"></i> Download</a>` +
-              `<button type="button" class="btn-chat-img-action" onclick="setAsAccountDPFromChat('${data.url}')"><i class="fa-solid fa-user-check"></i> Set as Profile DP</button>` +
-              `<button type="button" class="btn-chat-img-action" onclick="openImageInStudio('${data.url}')"><i class="fa-solid fa-sliders"></i> Fine-Tune in Studio</button>` +
+              `<a href="${dlUrl}" download="${data.filename}" target="_blank" class="btn-chat-img-action primary"><i class="fa-solid fa-download"></i> Download</a>` +
+              `<button type="button" class="btn-chat-img-action" onclick="setAsAccountDPFromChat('${dlUrl}')"><i class="fa-solid fa-user-check"></i> Set as Profile DP</button>` +
+              `<button type="button" class="btn-chat-img-action" onclick="openImageInStudio('${previewUrl}')"><i class="fa-solid fa-sliders"></i> Fine-Tune in Studio</button>` +
             `</div>` +
           `</div>`;
         appendMessageUI("assistant", assistantText);
@@ -2760,4 +2786,72 @@ async function setStudioCanvasAsProfileDP() {
     }
   }, "image/png");
 }
+
+function updateRetouchAttachmentDesc(file) {
+  const attachmentFileDesc = document.getElementById("attachment-file-desc");
+  if (!attachmentFileDesc) return;
+  const activeChips = Array.from(document.querySelectorAll(".chat-preset-chip.active")).map(c => c.textContent.trim());
+  const sizeKb = file ? `${(file.size / 1024).toFixed(0)} KB • ` : "";
+  if (activeChips.length > 0) {
+    attachmentFileDesc.textContent = `${sizeKb}${activeChips.length} active: ${activeChips.join(", ")}`;
+  } else {
+    attachmentFileDesc.textContent = `${sizeKb}No filters selected (click tags to toggle)`;
+  }
+}
+
+// Global In-Chat Image Actions
+window.setAsAccountDPFromChat = async function(imageUrl) {
+  showToast("Updating your profile picture...");
+  try {
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+    const file = new File([blob], "retouched_avatar.jpg", { type: "image/jpeg" });
+    const uploadedUrl = await uploadAvatarFile(file);
+    if (uploadedUrl) {
+      const profRes = await fetch("/api/user/profile");
+      if (profRes.ok) {
+        const curr = await profRes.json();
+        const updateRes = await fetch("/api/user/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: curr.name,
+            email: curr.email,
+            gender: curr.gender || "male",
+            role: curr.role,
+            avatar_url: uploadedUrl,
+            bio: curr.bio
+          })
+        });
+        if (updateRes.ok) {
+          const uData = await updateRes.json();
+          applyUserProfileToUI(uData.user);
+          showToast("✅ Profile DP updated with your retouched photo!");
+        }
+      }
+    }
+  } catch (e) {
+    showToast(`⚠️ Could not update profile DP: ${e.message}`);
+  }
+};
+
+window.openImageInStudio = function(imageUrl) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    studioImage = img;
+    invalidateRetouchCache();
+    const emptyOverlay = document.getElementById("studio-empty-overlay");
+    if (emptyOverlay) emptyOverlay.style.display = "none";
+    switchView("image");
+    renderStudioCanvas();
+    showToast("📸 Photo loaded into Image Studio for fine-tuning!");
+  };
+  img.onerror = () => {
+    switchView("image");
+    showToast("⚠️ Could not load image into studio.");
+  };
+  img.src = imageUrl;
+};
+
 
