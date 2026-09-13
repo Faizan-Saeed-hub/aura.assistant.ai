@@ -1,0 +1,87 @@
+# ==========================================================
+# Aura AI Personal Assistant — Git Ignore Configuration
+# ==========================================================
+
+# Environment Secrets & API Keys (CRITICAL - NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / Python Cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# SQLite Databases & Local Runtime Data
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+data/assistant.db
+data/vector_db/*.json
+!data/vector_db/.gitkeep
+
+# User Uploaded Documents & Avatars
+data/avatars/*
+!data/avatars/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Logs & Temporary Files
+*.log
+*.log.*
+logs/
+scratch/
+tmp/
+*.tmp
+
+# IDE & Editor Configuration
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# OS-generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/

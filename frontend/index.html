@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura — AI Personal Assistant</title>
+  <!-- Google Fonts: Plus Jakarta Sans & Fira Code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <!-- Top Category Tags (matching reference style) -->
+  <div class="top-tag-bar">
+    <div class="tag-group-left">
+      <span class="top-pill">WEB APP</span>
+      <span class="top-pill highlight">TASK AUTOMATION</span>
+      <span class="top-pill">AI - POWERED</span>
+    </div>
+    <div class="tag-group-right">
+      <span class="top-pill">TEAM PRODUCTIVITY</span>
+      <span class="top-pill highlight">SMART TASK PRIORITIZATION</span>
+    </div>
+  </div>
+
+  <!-- Main Floating Window Frame -->
+  <div class="window-frame">
+    <!-- Window Header / Browser Chrome -->
+    <div class="window-header">
+      <div class="window-controls">
+        <span class="control-dot close"></span>
+        <span class="control-dot minimize"></span>
+        <span class="control-dot maximize"></span>
+        <div class="header-nav-arrows">
+          <i class="fa-solid fa-chevron-left" id="nav-back-btn" title="Back to Dashboard"></i>
+          <i class="fa-solid fa-chevron-right"></i>
+        </div>
+      </div>
+
+      <div class="window-address-bar">
+        <i class="fa-solid fa-lock"></i>
+        <span>aura.assistant.ai</span>
+        <i class="fa-solid fa-rotate-right" id="refresh-page-btn" title="Refresh"></i>
+      </div>
+
+      <div class="window-header-actions">
+        <button class="win-btn" id="voice-tts-toggle" title="Toggle Voice Output">
+          <i class="fa-solid fa-volume-high"></i>
+          <span>Voice: ON</span>
+        </button>
+        <button class="win-btn-icon" id="fullscreen-btn" title="Toggle Fullscreen View">
+          <i class="fa-solid fa-expand"></i>
+        </button>
+        <button class="win-btn-icon" id="quick-settings-btn" title="Settings">
+          <i class="fa-solid fa-sliders"></i>
+        </button>
+        <button class="win-btn" id="quick-profile-btn" title="User Profile & Account">
+          <img id="header-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="header-avatar-mini" />
+          <span id="header-display-name">Faizan</span>
+        </button>
+        <button class="win-btn-icon" id="new-chat-top-btn" title="New Chat">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- App Body: Sidebar + Main Content -->
+    <div class="app-body">
+      <!-- Left Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <!-- User Profile Card -->
+        <div class="sidebar-user-card" id="sidebar-profile-card">
+          <div class="user-avatar-group" id="open-profile-avatar-group" style="cursor: pointer;" title="Click to view profile or create account">
+            <img id="user-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="user-avatar-img" />
+            <div class="user-info">
+              <h4 id="user-display-name">Faizan</h4>
+              <span id="user-display-role">AI Engineer & Creator</span>
+            </div>
+          </div>
+          <button type="button" class="btn-create-acc-pill" id="sidebar-create-acc-btn" title="Create Account / Switch Profile">
+            <i class="fa-solid fa-user-plus"></i> Account
+          </button>
+        </div>
+
+        <!-- Primary Navigation -->
+        <nav class="sidebar-nav">
+          <button class="nav-item active" id="nav-home-btn">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+          </button>
+          <button class="nav-item" id="nav-new-chat-btn">
+            <i class="fa-solid fa-message"></i>
+            <span>New Chat</span>
+          </button>
+          <button class="nav-item" id="nav-tasks-btn">
+            <i class="fa-solid fa-clipboard-list"></i>
+            <span>My Tasks</span>
+          </button>
+          <button class="nav-item" id="nav-email-btn">
+            <i class="fa-solid fa-envelope-open-text"></i>
+            <span>Email Studio</span>
+          </button>
+          <button class="nav-item" id="nav-image-btn">
+            <i class="fa-solid fa-crop-simple"></i>
+            <span>Image Studio</span>
+          </button>
+          <button class="nav-item" id="nav-rag-btn">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>Saved Files (RAG)</span>
+          </button>
+          <button class="nav-item" id="nav-memory-btn">
+            <i class="fa-solid fa-brain"></i>
+            <span>Memory Vault</span>
+          </button>
+        </nav>
+
+        <!-- Chat History List -->
+        <div class="sidebar-history-section">
+          <div class="history-group">
+            <span class="history-label">Today</span>
+            <div class="history-items-list" id="history-today">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+
+          <div class="history-group">
+            <span class="history-label">Previous Conversations</span>
+            <div class="history-items-list" id="history-older">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar Promo / Status Card -->
+        <div class="sidebar-promo-card">
+          <div class="promo-status">
+            <span class="status-pulse-dot"></span>
+            <span id="active-model-badge">Gemini 2.5 Active</span>
+          </div>
+          <p>Multi-provider AI with zero cost</p>
+          <button class="btn-promo-action" id="open-settings-promo-btn">
+            Manage Providers
+          </button>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+          <button class="sidebar-settings-link" id="sidebar-settings-btn">
+            <i class="fa-solid fa-gear"></i>
+            <span>Settings</span>
+          </button>
+          <span class="settings-dots"><i class="fa-solid fa-ellipsis"></i></span>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <main class="main-content" id="main-content">
+        <!-- VIEW 1: Dashboard Home View -->
+        <div class="dashboard-view" id="dashboard-view">
+          <!-- Welcome Hero Header -->
+          <div class="dashboard-welcome">
+            <h1><span class="welcome-pill">Welcome, <span id="dash-welcome-name">Faizan</span>!</span> 👋</h1>
+            <h2>How can I help you today?</h2>
+          </div>
+
+          <!-- Top Grid Row: Sticky Note Files + Assistant Action -->
+          <div class="dashboard-grid">
+            <!-- Widget 1: Previously Viewed & Indexed Files (Yellow Sticky Card) -->
+            <div class="widget-card yellow-sticky-card" id="widget-files-card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="fa-regular fa-file-lines"></i>
+                  <span>Previously indexed files</span>
+                </div>
+                <button class="btn-more-options" id="dash-open-rag" title="Upload more files">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+              </div>
+              <div class="files-mini-list" id="dash-files-list">
+                <!-- Loaded dynamically -->
+                <div class="file-mini-item">
+                  <i class="fa-solid fa-file-pdf icon-pdf"></i>
+                  <span>AI Personal Assistant Manual.pdf</span>
+                </div>
+                <div class="file-mini-item">
+                  <i class="fa-solid fa-file-lines icon-txt"></i>
+                  <span>Project Notes & Architecture.md</span>
+                </div>
+              </div>
+              <div class="sticky-footer">
+                <button class="btn-sticky-add" id="dash-quick-upload-btn">
+                  <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                  <span>Upload Document</span>
+                </button>
+                <i class="fa-solid fa-hand-holding-heart sticky-hand"></i>
+              </div>
+            </div>
+
+            <!-- Widget 2: Summarize / Action Card -->
+            <div class="widget-card white-card" id="widget-action-card">
+              <div class="card-header">
+                <div class="card-title purple">
+                  <i class="fa-solid fa-sparkles"></i>
+                  <span>Real-Time Intelligence</span>
+                </div>
+              </div>
+              <div class="action-card-content">
+                <div class="meeting-item">
+                  <div class="meeting-avatar">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" alt="Avatar" />
+                  </div>
+                  <div class="meeting-details">
+                    <div class="meeting-title">
+                      <i class="fa-solid fa-cloud-sun text-amber"></i>
+                      <strong>Live Weather & System Status</strong>
+                    </div>
+                    <span class="meeting-time" id="dash-live-time">Checking time & weather...</span>
+                  </div>
+                </div>
+                <button class="btn-chip-action" id="dash-weather-prompt-btn">
+                  <i class="fa-solid fa-bolt"></i> Ask for Weather & Time
+                </button>
+              </div>
+            </div>
+
+            <!-- Widget 3: Suggested Task A -->
+            <div class="widget-card white-card suggested-card" data-prompt="Search the web for latest AI and LLM breakthroughs this week.">
+              <div class="card-header">
+                <div class="card-title muted">
+                  <i class="fa-solid fa-compass"></i>
+                  <span>Suggested Task</span>
+                </div>
+              </div>
+              <div class="suggested-content">
+                <h3>Conduct Web Research</h3>
+                <p>Live search DuckDuckGo for news & technology updates</p>
+              </div>
+            </div>
+
+            <!-- Widget 4: Suggested Task B -->
+            <div class="widget-card white-card suggested-card" data-prompt="Calculate 25 * 480 + sqrt(65536) and explain the steps.">
+              <div class="card-header">
+                <div class="card-title muted">
+                  <i class="fa-solid fa-calculator"></i>
+                  <span>Suggested Task</span>
+                </div>
+              </div>
+              <div class="suggested-content">
+                <h3>Perform Math Calculation</h3>
+                <p>Evaluate trigonometric, algebraic, and power formulas</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Studio Launcher Row: Email Studio & Image Studio -->
+          <div class="dashboard-studio-row">
+            <div class="dash-studio-card email-card" id="dash-email-card" title="Click to open full-screen AI Email Studio">
+              <div class="dash-studio-icon email-icon">
+                <i class="fa-solid fa-envelope-open-text"></i>
+              </div>
+              <div class="dash-studio-info">
+                <div class="dash-studio-pill"><i class="fa-solid fa-microphone"></i> Voice Drafter & AI</div>
+                <h3>AI Email Studio</h3>
+                <p>Dictate in English or Roman Urdu, select tones, and draft tailored business proposals & outreach.</p>
+              </div>
+              <button type="button" class="btn-studio-launch">
+                <span>Open Studio</span> <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+
+            <div class="dash-studio-card image-card" id="dash-image-card" title="Click to open full-screen Social Media Image Studio">
+              <div class="dash-studio-icon image-icon">
+                <i class="fa-solid fa-crop-simple"></i>
+              </div>
+              <div class="dash-studio-info">
+                <div class="dash-studio-pill"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Face Glow & Retouch</div>
+                <h3>Image Studio & AI Retouch</h3>
+                <p>Format photos for WhatsApp, Instagram, LinkedIn, with natural face glow and dark circles removal.</p>
+              </div>
+              <button type="button" class="btn-studio-launch">
+                <span>Open Studio</span> <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Grid: My Tasks Widget (matching reference) -->
+          <div class="dashboard-tasks-card">
+            <div class="tasks-card-header">
+              <div class="tasks-title-group">
+                <i class="fa-solid fa-clipboard-check text-indigo"></i>
+                <h3>My Tasks <span class="tasks-count-badge" id="dash-tasks-count">0</span></h3>
+              </div>
+              <div class="tasks-search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="dash-tasks-search" placeholder="Search for task name..." />
+                <button class="tasks-search-arrow"><i class="fa-solid fa-arrow-right"></i></button>
+              </div>
+              <button class="btn-prioritize-tasks" id="dash-prioritize-btn">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Prioritize Tasks</span>
+              </button>
+            </div>
+
+            <!-- Tasks List Table/Items -->
+            <div class="dash-tasks-list" id="dash-tasks-list">
+              <!-- Loaded dynamically from SQLite database -->
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: Chat Conversation View (Active Stream) -->
+        <div class="chat-view" id="chat-view" style="display: none;">
+          <div class="chat-messages-container" id="messages-container">
+            <!-- Messages rendered dynamically -->
+          </div>
+
+          <!-- Tool Execution Activity Indicator -->
+          <div class="agent-activity-banner" id="agent-activity-bar" style="display: none;">
+            <div class="pulse-loader"></div>
+            <span id="activity-text">Aura is reasoning & executing tools...</span>
+          </div>
+        </div>
+
+        <!-- VIEW 3: Email Studio View (Full-Screen In-Page View) -->
+        <div class="studio-page-view" id="email-view" style="display: none;">
+          <div class="view-top-header">
+            <div class="view-title-cluster">
+              <button type="button" class="btn-view-back" id="btn-email-back" title="Back to Dashboard">
+                <i class="fa-solid fa-arrow-left"></i> <span>Dashboard</span>
+              </button>
+              <div class="view-header-divider"></div>
+              <div class="view-header-text">
+                <h2><i class="fa-solid fa-envelope-open-text text-indigo"></i> AI Email Studio & Voice Drafter</h2>
+                <p>Draft, dictate with microphone, and polish high-converting business emails tailored to any professional tone.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="studio-full-card">
+            <div class="email-studio-grid">
+              <!-- Left Controls Column -->
+              <div class="email-controls-col">
+                <!-- Email Starters -->
+                <div class="form-field">
+                  <label><i class="fa-solid fa-bolt text-indigo"></i> Quick Email Starters</label>
+                  <div class="email-starter-chips" id="email-starter-chips">
+                    <button type="button" class="starter-chip" data-purpose="Cold Outreach" data-tone="Persuasive" data-prompt="Pitching our AI autonomous agent workspace, 40% operational efficiency gains, requesting a 15-minute introductory call next week.">💼 Client Pitch</button>
+                    <button type="button" class="starter-chip" data-purpose="Job Application" data-tone="Professional" data-prompt="Applying for AI Engineer position, 4+ years of Python & LLM agent development experience, portfolio and resume attached.">📄 Job Application</button>
+                    <button type="button" class="starter-chip" data-purpose="Follow-up" data-tone="Friendly" data-prompt="Following up on our discussion yesterday, sharing updated project milestones and next actionable steps.">🤝 Follow-up</button>
+                    <button type="button" class="starter-chip" data-purpose="Meeting Request" data-tone="Concise" data-prompt="Requesting a quick 20-minute sync this Thursday or Friday to review sprint roadmap and deliverables.">📅 Schedule Sync</button>
+                    <button type="button" class="starter-chip" data-purpose="Announcement" data-tone="Professional" data-prompt="Announcing our latest product release with high-impact features, live demo access, and team credits.">🚀 Launch Update</button>
+                  </div>
+                </div>
+
+                <div class="form-field">
+                  <label for="email-purpose-select">Email Goal / Purpose</label>
+                  <select id="email-purpose-select" class="clean-select full-width">
+                    <option value="Cold Outreach">Cold Outreach & Business Proposal</option>
+                    <option value="Job Application">Job Application & Cover Note</option>
+                    <option value="Follow-up">Follow-up (After Meeting / Interview)</option>
+                    <option value="Meeting Request">Meeting Request & Scheduling</option>
+                    <option value="Professional Inquiry">Professional Inquiry / Question</option>
+                    <option value="Announcement">Product or Service Announcement</option>
+                    <option value="Thank You">Thank You & Appreciation</option>
+                    <option value="Apology & Resolution">Apology & Issue Resolution</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label>Tone of Voice</label>
+                  <div class="tone-pill-group" id="tone-pill-group">
+                    <button type="button" class="tone-pill active" data-tone="Professional"><i class="fa-solid fa-briefcase"></i> Professional</button>
+                    <button type="button" class="tone-pill" data-tone="Friendly"><i class="fa-solid fa-face-smile"></i> Friendly</button>
+                    <button type="button" class="tone-pill" data-tone="Persuasive"><i class="fa-solid fa-bullseye"></i> Persuasive</button>
+                    <button type="button" class="tone-pill" data-tone="Concise"><i class="fa-solid fa-bolt"></i> Concise</button>
+                    <button type="button" class="tone-pill" data-tone="Urgent"><i class="fa-solid fa-fire"></i> Urgent</button>
+                  </div>
+                </div>
+
+                <div class="form-group-row">
+                  <div class="form-field" style="flex: 1;">
+                    <label for="email-recipient-name">Recipient Name</label>
+                    <input type="text" id="email-recipient-name" class="clean-input" placeholder="e.g. Sarah Connor" />
+                  </div>
+                  <div class="form-field" style="flex: 1;">
+                    <label for="email-recipient-company">Company / Org</label>
+                    <input type="text" id="email-recipient-company" class="clean-input" placeholder="e.g. Cyberdyne Systems" />
+                  </div>
+                </div>
+
+                <div class="form-field">
+                  <div class="label-split">
+                    <label for="email-key-points">Key Points & Details to Include</label>
+                    <button type="button" class="btn-voice-dictate" id="email-voice-dictate-btn" title="Click to speak and dictate points via microphone (English or Roman Urdu)">
+                      <i class="fa-solid fa-microphone"></i>
+                      <span id="email-dictate-label">Voice Input</span>
+                    </button>
+                  </div>
+                  <textarea id="email-key-points" class="clean-input" rows="4" placeholder="Type key points or click 'Voice Input' to dictate in English or Roman Urdu..."></textarea>
+                  <div class="field-meta-row">
+                    <span class="dictate-status-text" id="email-dictate-status"></span>
+                    <span class="char-count-text" id="email-key-points-count">0 words</span>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-accent-pill full-width" id="btn-generate-email" style="margin-top: 6px;">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Email with AI
+                </button>
+              </div>
+
+              <!-- Right Output Column -->
+              <div class="email-output-col">
+                <div class="form-field">
+                  <div class="label-split">
+                    <label for="email-output-subject">Subject Line</label>
+                    <span class="char-count-text" id="email-subject-count"></span>
+                  </div>
+                  <input type="text" id="email-output-subject" class="clean-input" placeholder="Generated subject line will appear here..." />
+                </div>
+
+                <div class="form-field" style="flex: 1; display: flex; flex-direction: column;">
+                  <div class="label-split">
+                    <label for="email-output-body">Email Body (Editable)</label>
+                    <span class="char-count-text" id="email-body-count">0 words</span>
+                  </div>
+                  <textarea id="email-output-body" class="clean-input email-body-area" placeholder="Your formatted email will appear here... Feel free to edit directly."></textarea>
+                </div>
+
+                <div class="email-actions-bar">
+                  <button type="button" class="btn-email-action" id="btn-copy-email">
+                    <i class="fa-regular fa-copy"></i> Copy Text
+                  </button>
+                  <button type="button" class="btn-email-action" id="btn-download-email">
+                    <i class="fa-solid fa-download"></i> Save as .eml
+                  </button>
+                  <button type="button" class="btn-email-action" id="btn-open-mailapp">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Mail
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 4: Image Studio View (Full-Screen In-Page View) -->
+        <div class="studio-page-view" id="image-view" style="display: none;">
+          <div class="view-top-header">
+            <div class="view-title-cluster">
+              <button type="button" class="btn-view-back" id="btn-image-back" title="Back to Dashboard">
+                <i class="fa-solid fa-arrow-left"></i> <span>Dashboard</span>
+              </button>
+              <div class="view-header-divider"></div>
+              <div class="view-header-text">
+                <h2><i class="fa-solid fa-crop-simple text-indigo"></i> Social Media Image Studio & AI Retouch</h2>
+                <p>Format photos for WhatsApp, Instagram, Facebook, YouTube, LinkedIn, or Twitter/X with background blur and non-destructive AI Face Glow & Dark Circles removal.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="studio-full-card">
+            <!-- Top Upload Bar -->
+            <div class="image-upload-bar" id="image-upload-bar">
+              <input type="file" id="studio-file-input" accept="image/png,image/jpeg,image/jpg,image/webp" style="display:none;" />
+              <button type="button" class="btn-accent-pill" id="studio-upload-btn">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Choose Image from Computer
+              </button>
+              <span class="upload-hint-span">or drag & drop your photo anywhere on the canvas</span>
+            </div>
+
+            <div class="image-studio-workspace">
+              <!-- Left Controls Column -->
+              <div class="studio-controls-panel">
+                <!-- Studio Tab Switcher: Framing vs Retouch -->
+                <div class="studio-tab-bar">
+                  <button type="button" class="studio-tab-btn active" id="tab-studio-framing-btn">
+                    <i class="fa-solid fa-crop-simple"></i> Framing & Sizing
+                  </button>
+                  <button type="button" class="studio-tab-btn" id="tab-studio-retouch-btn">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ AI Face Glow & Retouch
+                  </button>
+                </div>
+
+                <!-- PANEL 1: Framing & Social Media Platform Sizing -->
+                <div class="studio-subpanel active" id="panel-studio-framing">
+                  <!-- Platform Selector -->
+                  <div class="form-field">
+                    <label>Social Media Platform</label>
+                    <div class="platform-tabs-row" id="platform-tabs">
+                      <button type="button" class="platform-tab active" data-platform="whatsapp"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+                      <button type="button" class="platform-tab" data-platform="instagram"><i class="fa-brands fa-instagram"></i> Instagram</button>
+                      <button type="button" class="platform-tab" data-platform="facebook"><i class="fa-brands fa-facebook"></i> Facebook</button>
+                      <button type="button" class="platform-tab" data-platform="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
+                      <button type="button" class="platform-tab" data-platform="linkedin"><i class="fa-brands fa-linkedin"></i> LinkedIn</button>
+                      <button type="button" class="platform-tab" data-platform="twitter"><i class="fa-brands fa-x-twitter"></i> Twitter/X</button>
+                      <button type="button" class="platform-tab" data-platform="custom"><i class="fa-solid fa-sliders"></i> Custom</button>
+                    </div>
+                  </div>
+
+                  <!-- Preset Dimension Selector -->
+                  <div class="form-field">
+                    <label for="studio-preset-select">Preset Format & Dimensions</label>
+                    <select id="studio-preset-select" class="clean-select full-width">
+                      <!-- Dynamically populated based on chosen platform -->
+                    </select>
+                  </div>
+
+                  <!-- Framing & Background Mode -->
+                  <div class="form-field">
+                    <label>Background & Framing Effect</label>
+                    <div class="fitting-mode-group">
+                      <label class="fitting-mode-btn active" id="mode-blur">
+                        <input type="radio" name="studio-mode" value="blur" checked />
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Blurred Background
+                      </label>
+                      <label class="fitting-mode-btn" id="mode-circle">
+                        <input type="radio" name="studio-mode" value="circle" />
+                        <i class="fa-solid fa-circle"></i> Circle Mask (DP)
+                      </label>
+                      <label class="fitting-mode-btn" id="mode-crop">
+                        <input type="radio" name="studio-mode" value="crop" />
+                        <i class="fa-solid fa-expand"></i> Fill & Crop
+                      </label>
+                      <label class="fitting-mode-btn" id="mode-fit">
+                        <input type="radio" name="studio-mode" value="fit" />
+                        <i class="fa-solid fa-compress"></i> Letterbox / Pad
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Adjustments Sliders -->
+                  <div class="studio-sliders-box">
+                    <div class="slider-row">
+                      <div class="slider-label">
+                        <span>Zoom / Scale</span>
+                        <span id="label-zoom">1.0x</span>
+                      </div>
+                      <input type="range" id="slider-zoom" min="0.5" max="3.0" step="0.05" value="1.0" class="studio-range" />
+                    </div>
+
+                    <div class="slider-row" id="row-blur-slider">
+                      <div class="slider-label">
+                        <span>Background Blur Amount</span>
+                        <span id="label-blur">25px</span>
+                      </div>
+                      <input type="range" id="slider-blur" min="5" max="60" step="5" value="25" class="studio-range" />
+                    </div>
+
+                    <div class="slider-row">
+                      <div class="slider-label">
+                        <span>Horizontal Pan (X)</span>
+                        <span id="label-pan-x">0px</span>
+                      </div>
+                      <input type="range" id="slider-pan-x" min="-300" max="300" step="5" value="0" class="studio-range" />
+                    </div>
+
+                    <div class="slider-row">
+                      <div class="slider-label">
+                        <span>Vertical Pan (Y)</span>
+                        <span id="label-pan-y">0px</span>
+                      </div>
+                      <input type="range" id="slider-pan-y" min="-300" max="300" step="5" value="0" class="studio-range" />
+                    </div>
+                  </div>
+
+                  <!-- Quick Action Buttons -->
+                  <div class="studio-quick-tools">
+                    <button type="button" class="btn-mini-tool" id="studio-rotate-btn" title="Rotate 90°">
+                      <i class="fa-solid fa-rotate-right"></i> Rotate 90°
+                    </button>
+                    <button type="button" class="btn-mini-tool" id="studio-reset-btn" title="Reset adjustments">
+                      <i class="fa-solid fa-arrow-rotate-left"></i> Reset Position
+                    </button>
+                  </div>
+                </div>
+
+                <!-- PANEL 2: AI Face Glow Up & Dark Circles Retouch Suite -->
+                <div class="studio-subpanel" id="panel-studio-retouch">
+                  <div class="retouch-guarantee-badge">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span><strong>Structure Preserved:</strong> 100% natural facial expressions & features maintained. Zero distortion.</span>
+                  </div>
+
+                  <!-- Quick 1-Click Retouch Presets -->
+                  <div class="form-field">
+                    <label>1-Click Retouch Presets</label>
+                    <div class="retouch-preset-pills">
+                      <button type="button" class="retouch-pill-btn" id="preset-retouch-glow">
+                        <i class="fa-solid fa-sun"></i> Natural Glow
+                      </button>
+                      <button type="button" class="retouch-pill-btn" id="preset-retouch-undereye">
+                        <i class="fa-solid fa-eye"></i> Erase Dark Circles
+                      </button>
+                      <button type="button" class="retouch-pill-btn" id="preset-retouch-glam">
+                        <i class="fa-solid fa-star"></i> Studio Glam
+                      </button>
+                      <button type="button" class="retouch-pill-btn" id="preset-retouch-reset">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Dark Circles Remover Card -->
+                  <div class="retouch-card-box">
+                    <div class="retouch-card-header">
+                      <div class="retouch-card-title">
+                        <i class="fa-solid fa-eye-low-vision text-indigo"></i>
+                        <div>
+                          <strong>Dark Circles Remover</strong>
+                          <p class="retouch-subdesc">Lifts under-eye shadows & conceals tired dark rings</p>
+                        </div>
+                      </div>
+                      <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-dark-circles" checked />
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="slider-row" id="row-dark-circles-slider" style="margin-top: 10px;">
+                      <div class="slider-label">
+                        <span>Under-Eye Conceal Intensity</span>
+                        <span id="label-dark-circles">65%</span>
+                      </div>
+                      <input type="range" id="slider-dark-circles" min="0" max="100" step="5" value="65" class="studio-range" />
+                    </div>
+                  </div>
+
+                  <!-- Natural Lighting / Face Glow Slider -->
+                  <div class="retouch-card-box">
+                    <div class="slider-row">
+                      <div class="slider-label">
+                        <span><i class="fa-solid fa-wand-magic-sparkles text-amber"></i> Natural Light & Face Glow</span>
+                        <span id="label-face-glow">35%</span>
+                      </div>
+                      <input type="range" id="slider-face-glow" min="0" max="100" step="5" value="35" class="studio-range" />
+                      <p class="retouch-subdesc">Warm softbox illumination that enhances midtones without washing out details</p>
+                    </div>
+                  </div>
+
+                  <!-- Skin Texture Softening -->
+                  <div class="retouch-card-box">
+                    <div class="slider-row">
+                      <div class="slider-label">
+                        <span><i class="fa-solid fa-spa text-emerald"></i> Skin Texture Softening</span>
+                        <span id="label-skin-smooth">25%</span>
+                      </div>
+                      <input type="range" id="slider-skin-smooth" min="0" max="100" step="5" value="25" class="studio-range" />
+                      <p class="retouch-subdesc">Smooths blemishes and pores while keeping eyes, lips, and hair crisp</p>
+                    </div>
+                  </div>
+
+                  <!-- Skin Tone Warmth -->
+                  <div class="retouch-card-box">
+                    <div class="slider-row">
+                      <div class="slider-label">
+                        <span><i class="fa-solid fa-palette text-rose"></i> Skin Tone Warmth</span>
+                        <span id="label-face-warmth">+10</span>
+                      </div>
+                      <input type="range" id="slider-face-warmth" min="-50" max="50" step="5" value="10" class="studio-range" />
+                    </div>
+                  </div>
+
+                  <!-- Hold to Compare Button -->
+                  <div style="margin-top: 12px;">
+                    <button type="button" class="btn-compare-retouch" id="btn-compare-retouch">
+                      <i class="fa-solid fa-eye"></i> Hold to View Original Photo
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Canvas Preview Column -->
+              <div class="studio-preview-panel">
+                <div class="canvas-container-outer" id="studio-canvas-dropzone">
+                  <canvas id="studio-canvas"></canvas>
+                  <div class="compare-floating-badge" id="studio-compare-badge" style="display: none;">
+                    <i class="fa-solid fa-backward-step"></i> ORIGINAL PHOTO (UNRETOUCHED)
+                  </div>
+                  <div class="canvas-empty-overlay" id="studio-empty-overlay">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Click "Choose Image" or drop your picture here</p>
+                    <span>Supports JPG, PNG, WebP up to 4K</span>
+                  </div>
+                </div>
+
+                <div class="studio-footer-meta">
+                  <div class="preset-info-badge" id="studio-resolution-badge">
+                    <i class="fa-solid fa-ruler-combined"></i> <span>WhatsApp DP (1:1 • 1080 × 1080 px)</span>
+                  </div>
+                  <div class="studio-action-buttons">
+                    <button type="button" class="btn-outline-dp" id="studio-set-dp-btn" title="Set this retouched/cropped picture as your assistant account DP">
+                      <i class="fa-solid fa-user-check"></i> Set as Account DP
+                    </button>
+                    <button type="button" class="btn-accent-pill" id="studio-download-btn">
+                      <i class="fa-solid fa-download"></i> Download Image
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Floating Omnibar (Present in dashboard and chat views!) -->
+        <div class="omnibar-container" id="chat-omnibar">
+          <form class="omnibar-form" id="chat-form">
+            <button type="button" class="btn-omnibar-tool" id="quick-attach-btn" title="Attach Document for RAG">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <input type="file" id="quick-file-input" style="display: none;" accept=".pdf,.txt,.md,.docx,.csv" />
+
+            <textarea
+              id="user-input"
+              rows="1"
+              placeholder="Ask or search for anything. Use tools, search web, or compute..."
+              autocomplete="off"
+            ></textarea>
+
+            <button type="button" class="btn-omnibar-tool btn-lang-toggle" id="voice-lang-toggle" title="Click to toggle Voice Input Language: Urdu (UR) / English (EN)">
+              <span id="voice-lang-badge">UR</span>
+            </button>
+
+            <button type="button" class="btn-omnibar-tool" id="voice-input-btn" title="Voice Dictation">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+
+            <button type="submit" class="btn-omnibar-send" id="send-btn" title="Send message">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- MODAL 1: Saved Files / Knowledge Base (RAG) -->
+  <div class="modal-overlay" id="rag-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <i class="fa-solid fa-folder-open text-indigo"></i>
+          <h3>Saved Files & Knowledge Base (RAG)</h3>
+        </div>
+        <button class="btn-modal-close close-modal-btn" data-modal="rag-modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subtitle">Upload documents (PDF, DOCX, TXT, MD). Aura indexes them with vector embeddings to ground chat responses with source citations.</p>
+        
+        <div class="drop-zone" id="rag-drop-zone">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <p>Drag & drop your files here or <span class="browse-link">browse</span></p>
+          <span class="drop-sub">Supported: PDF, DOCX, TXT, MD, CSV</span>
+          <input type="file" id="modal-file-input" style="display: none;" accept=".pdf,.txt,.md,.docx,.csv" />
+        </div>
+
+        <div class="rag-table-section">
+          <h4>Indexed Documents (<span id="rag-doc-count">0</span>)</h4>
+          <div class="clean-table-wrapper">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Filename</th>
+                  <th>Type</th>
+                  <th>Chunks</th>
+                  <th>Uploaded</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rag-docs-tbody">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Memory Vault -->
+  <div class="modal-overlay" id="memory-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <i class="fa-solid fa-brain text-indigo"></i>
+          <h3>Personal Memory Vault</h3>
+        </div>
+        <button class="btn-modal-close close-modal-btn" data-modal="memory-modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subtitle">Aura remembers enduring facts and preferences you mention during conversations. You can also add or delete memories directly.</p>
+        
+        <form class="clean-form-row" id="add-memory-form">
+          <select id="mem-category" class="clean-select">
+            <option value="fact">Fact</option>
+            <option value="preference">Preference</option>
+            <option value="project">Project</option>
+            <option value="rule">Rule</option>
+          </select>
+          <input type="text" id="mem-content" class="clean-input" placeholder="e.g. User prefers Python and concise explanations..." required />
+          <button type="submit" class="btn-accent-pill">Add Memory</button>
+        </form>
+
+        <div class="memories-grid-wrapper">
+          <h4>Stored Long-Term Memories</h4>
+          <div class="memories-list" id="memories-grid">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: My Tasks & Notes -->
+  <div class="modal-overlay" id="notes-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <i class="fa-solid fa-clipboard-list text-indigo"></i>
+          <h3>My Tasks & Reminders</h3>
+        </div>
+        <button class="btn-modal-close close-modal-btn" data-modal="notes-modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subtitle">Add tasks directly or ask Aura to create them during chat.</p>
+        
+        <form class="clean-form-row" id="add-note-form">
+          <input type="text" id="note-title-input" class="clean-input flex-2" placeholder="Task title, e.g. Prepare prototype for testing" required />
+          <input type="text" id="note-due-input" class="clean-input flex-1" placeholder="Due date (e.g. By tomorrow)" />
+          <button type="submit" class="btn-accent-pill">Create Task</button>
+        </form>
+
+        <div class="tasks-filter-bar">
+          <button class="tab-pill active" data-filter="all">All</button>
+          <button class="tab-pill" data-filter="pending">Pending</button>
+          <button class="tab-pill" data-filter="completed">Completed</button>
+        </div>
+
+        <div class="tasks-list-modal" id="notes-container">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Settings -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <i class="fa-solid fa-gear text-indigo"></i>
+          <h3>Assistant Settings & Providers</h3>
+        </div>
+        <button class="btn-modal-close close-modal-btn" data-modal="settings-modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="free-tier-banner">
+          <i class="fa-solid fa-sparkles"></i>
+          <div>
+            <strong>100% Free AI Engines Supported</strong>
+            <p>OpenRouter, Google Gemini & Groq provide free models with zero credit card needed.</p>
+          </div>
+        </div>
+
+        <form id="settings-form">
+          <div class="form-row">
+            <label for="setting-provider">Active LLM Provider</label>
+            <select id="setting-provider" class="clean-select full-width">
+              <option value="openrouter">OpenRouter (100% Free Models: Llama 3.3, DeepSeek R1)</option>
+              <option value="gemini">Google Gemini (Gemini 2.5 Flash Lite — Free)</option>
+              <option value="groq">Groq (Llama-3.3 — Free & Ultra-Fast)</option>
+              <option value="ollama">Ollama (Offline & Local)</option>
+              <option value="openai">OpenAI (GPT-4o)</option>
+            </select>
+          </div>
+
+          <!-- OpenRouter Key & Model -->
+          <div class="form-row" id="group-openrouter">
+            <div class="label-split">
+              <label for="setting-openrouter-key">OpenRouter API Key (Free tier available)</label>
+              <a href="https://openrouter.ai/keys" target="_blank" class="link-external">
+                Get Free Key (openrouter.ai/keys) <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+            <input type="password" id="setting-openrouter-key" class="clean-input full-width" placeholder="sk-or-v1-..." />
+            <span class="hint-text" id="openrouter-status-hint">Not configured</span>
+
+            <label for="setting-openrouter-model" style="margin-top: 8px; font-size: 0.8rem;">OpenRouter Free Model</label>
+            <select id="setting-openrouter-model" class="clean-select full-width">
+              <option value="nvidia/nemotron-3.5-lightning:free">Nvidia Nemotron 3.5 Lightning (Free & Verified)</option>
+              <option value="nex-agi/nex-n2.5-mini:free">Nex AGI 2.5 Mini (Free)</option>
+              <option value="liquid/lfm-2.5-2.6b:free">Liquid LFM 2.5 (Free)</option>
+            </select>
+          </div>
+
+          <!-- Gemini Key -->
+          <div class="form-row" id="group-gemini">
+            <div class="label-split">
+              <label for="setting-gemini-key">Google Gemini API Key</label>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link-external">
+                Get Free Key (Google AI Studio) <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+            <input type="password" id="setting-gemini-key" class="clean-input full-width" placeholder="AQ.Ab8RN... or AIzaSy..." />
+            <span class="hint-text" id="gemini-status-hint">Configured</span>
+          </div>
+
+          <!-- Groq Key & Model -->
+          <div class="form-row" id="group-groq">
+            <div class="label-split">
+              <label for="setting-groq-key">Groq API Key (Free, Ultra-Fast)</label>
+              <a href="https://console.groq.com/keys" target="_blank" class="link-external">
+                Get Free Key (Groq Console) <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+            <input type="password" id="setting-groq-key" class="clean-input full-width" placeholder="gsk_..." />
+            <span class="hint-text" id="groq-status-hint">Not configured</span>
+
+            <label for="setting-groq-model" style="margin-top: 8px; font-size: 0.8rem;">Groq Free Model</label>
+            <select id="setting-groq-model" class="clean-select full-width">
+              <option value="groq/compound-mini">Compound Mini (Fastest, Verified Free)</option>
+              <option value="openai/gpt-oss-20b">GPT-OSS 20B (OpenAI on Groq Free)</option>
+              <option value="qwen/qwen3.6-27b">Qwen 3.6 27B (Free)</option>
+              <option value="groq/compound">Groq Compound Full (Free)</option>
+            </select>
+          </div>
+
+          <!-- OpenAI Key -->
+          <div class="form-row" id="group-openai">
+            <label for="setting-openai-key">OpenAI API Key (Optional)</label>
+            <input type="password" id="setting-openai-key" class="clean-input full-width" placeholder="sk-..." />
+            <span class="hint-text" id="openai-status-hint">Not configured</span>
+          </div>
+
+          <div class="modal-footer-actions">
+            <button type="button" class="btn-cancel close-modal-btn" data-modal="settings-modal">Cancel</button>
+            <button type="submit" class="btn-accent-pill" id="save-settings-btn">Save Settings</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: User Profile & Account Creation -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <i class="fa-solid fa-user-gear text-indigo"></i>
+          <h3 id="profile-modal-title">Account & Profile</h3>
+        </div>
+        <button class="btn-modal-close close-modal-btn" data-modal="profile-modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-tabs-bar">
+          <button type="button" class="tab-pill active" id="tab-profile-view-btn">
+            <i class="fa-solid fa-id-card"></i> My Profile
+          </button>
+          <button type="button" class="tab-pill" id="tab-register-btn">
+            <i class="fa-solid fa-user-plus"></i> Create New Account
+          </button>
+        </div>
+
+        <!-- Tab 1: Current Profile Form -->
+        <form class="clean-profile-form" id="profile-edit-form">
+          <div class="profile-header-preview">
+            <div class="avatar-upload-wrap">
+              <img id="edit-avatar-preview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80" class="profile-preview-avatar" />
+              <button type="button" class="btn-avatar-file-pick" id="edit-avatar-upload-btn" title="Upload custom photo">
+                <i class="fa-solid fa-camera"></i> Choose Photo
+              </button>
+              <input type="file" id="edit-avatar-file-input" accept="image/png,image/jpeg,image/jpg,image/webp" style="display: none;" />
+            </div>
+            <div>
+              <h4 id="edit-preview-name">Faizan</h4>
+              <span id="edit-preview-role" class="preview-role-text">AI Engineer & Creator</span>
+              <div style="margin-top: 4px; font-size: 0.72rem; color: #10b981;">
+                <i class="fa-solid fa-circle-check"></i> Active Profile Session
+              </div>
+            </div>
+          </div>
+
+          <!-- Gender Selector (Auto-selects DP) -->
+          <div class="form-field">
+            <label>Gender (Selects Default DP)</label>
+            <div class="gender-radio-group">
+              <label class="gender-radio-pill active" id="pill-gender-male">
+                <input type="radio" name="profile-gender" value="male" checked />
+                <i class="fa-solid fa-mars"></i> Male
+              </label>
+              <label class="gender-radio-pill" id="pill-gender-female">
+                <input type="radio" name="profile-gender" value="female" />
+                <i class="fa-solid fa-venus"></i> Female
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group-row">
+            <div class="form-field" style="flex: 1;">
+              <label for="profile-name-input">Display / Full Name</label>
+              <input type="text" id="profile-name-input" class="clean-input" required />
+            </div>
+            <div class="form-field" style="flex: 1;">
+              <label for="profile-email-input">Email Address</label>
+              <input type="email" id="profile-email-input" class="clean-input" required />
+            </div>
+          </div>
+
+          <div class="form-group-row">
+            <div class="form-field" style="flex: 1;">
+              <label for="profile-role-input">Role / Title</label>
+              <input type="text" id="profile-role-input" class="clean-input" placeholder="e.g. Software Engineer, Researcher" />
+            </div>
+            <div class="form-field" style="flex: 1;">
+              <label for="profile-avatar-input">Avatar Photo URL</label>
+              <input type="url" id="profile-avatar-input" class="clean-input" placeholder="https://... or choose photo above" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="profile-bio-input">Personal Context / Bio (Aura remembers this)</label>
+            <textarea id="profile-bio-input" class="clean-input" rows="2" placeholder="Tell Aura about your background, goals, preferences..."></textarea>
+          </div>
+
+          <div class="modal-footer-actions" style="margin-top: 10px;">
+            <button type="button" class="btn-cancel close-modal-btn" data-modal="profile-modal">Cancel</button>
+            <button type="submit" class="btn-accent-pill">Save Profile Changes</button>
+          </div>
+        </form>
+
+        <!-- Tab 2: Create New Account Form (Hidden initially) -->
+        <form class="clean-profile-form" id="register-account-form" style="display: none;">
+          <p class="modal-subtitle">Register a new personal profile. Future live deployments will securely synchronize your chats, memory vault, and documents across devices.</p>
+
+          <div class="profile-header-preview">
+            <div class="avatar-upload-wrap">
+              <img id="reg-avatar-preview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80" class="profile-preview-avatar" />
+              <button type="button" class="btn-avatar-file-pick" id="reg-avatar-upload-btn" title="Upload custom photo">
+                <i class="fa-solid fa-camera"></i> Choose Photo
+              </button>
+              <input type="file" id="reg-avatar-file-input" accept="image/png,image/jpeg,image/jpg,image/webp" style="display: none;" />
+              <input type="hidden" id="reg-avatar-url" value="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80" />
+            </div>
+            <div>
+              <h4 id="reg-preview-name-label">New User Profile</h4>
+              <span class="preview-role-text">Select gender for default DP or choose your own photo</span>
+            </div>
+          </div>
+
+          <!-- Gender Selector (Auto-selects DP) -->
+          <div class="form-field">
+            <label>Gender (Selects Default DP)</label>
+            <div class="gender-radio-group">
+              <label class="gender-radio-pill active" id="reg-pill-gender-male">
+                <input type="radio" name="reg-gender" value="male" checked />
+                <i class="fa-solid fa-mars"></i> Male
+              </label>
+              <label class="gender-radio-pill" id="reg-pill-gender-female">
+                <input type="radio" name="reg-gender" value="female" />
+                <i class="fa-solid fa-venus"></i> Female
+              </label>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="reg-name-input">Full Name</label>
+            <input type="text" id="reg-name-input" class="clean-input" placeholder="e.g. Faizan" required />
+          </div>
+
+          <div class="form-field">
+            <label for="reg-email-input">Email Address</label>
+            <input type="email" id="reg-email-input" class="clean-input" placeholder="faizan@example.com" required />
+          </div>
+
+          <div class="form-group-row">
+            <div class="form-field" style="flex: 1;">
+              <label for="reg-password-input">Password</label>
+              <input type="password" id="reg-password-input" class="clean-input" placeholder="••••••••" required />
+            </div>
+            <div class="form-field" style="flex: 1;">
+              <label for="reg-role-input">Role / Profession</label>
+              <input type="text" id="reg-role-input" class="clean-input" placeholder="e.g. AI Specialist" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="reg-bio-input">About You (Bio)</label>
+            <input type="text" id="reg-bio-input" class="clean-input" placeholder="Brief info about your workflow and goals..." />
+          </div>
+
+          <div class="modal-footer-actions" style="margin-top: 10px;">
+            <button type="button" class="btn-cancel close-modal-btn" data-modal="profile-modal">Cancel</button>
+            <button type="submit" class="btn-accent-pill" id="btn-submit-register">Create Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Markdown Parser & Code Syntax Highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
