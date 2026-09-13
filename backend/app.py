@@ -23,6 +23,7 @@ from backend.rag.chunker import text_chunker
 from backend.rag.vector_store import vector_store
 from backend.agent.orchestrator import agent_orchestrator
 from backend.tools.notes import add_note, list_notes, complete_note, delete_note
+from backend.tools.image_studio import generate_ai_image, retouch_image_file
 from backend.llm.client import llm_client
 
 # Initialize Database
@@ -301,6 +302,56 @@ Output ONLY valid JSON in this exact structure:
             "subject": subj,
             "body": body
         }
+
+# --- Image Studio & Retouching Endpoints ---
+
+class ImageGenRequest(BaseModel):
+    prompt: str
+    width: Optional[int] = 1024
+    height: Optional[int] = 1024
+
+@app.post("/api/image/generate")
+async def api_generate_image(req: ImageGenRequest):
+    """Generate high-resolution AI art or concepts."""
+    return generate_ai_image(req.prompt, width=req.width or 1024, height=req.height or 1024)
+
+@app.post("/api/image/retouch")
+async def api_retouch_image(
+    file: UploadFile = File(...),
+    preset: str = Form("glow"),
+    glow: int = Form(35),
+    dark_circles: int = Form(65),
+    smooth: int = Form(25),
+    warmth: int = Form(10),
+    crop_aspect: Optional[str] = Form(None)
+):
+    """Upload photo and apply non-destructive face glow, dark circles lift, skin softening, and aspect crop."""
+    try:
+        from PIL import Image
+        import io
+        contents = await file.read()
+        pil_img = Image.open(io.BytesIO(contents))
+        
+        # Save original copy
+        orig_filename = f"orig_{uuid.uuid4().hex[:8]}_{file.filename}"
+        orig_path = UPLOADS_DIR / orig_filename
+        with open(orig_path, "wb") as f:
+            f.write(contents)
+            
+        res = retouch_image_file(
+            pil_img,
+            preset=preset,
+            glow=glow,
+            dark_circles=dark_circles,
+            smooth=smooth,
+            warmth=warmth,
+            crop_aspect=crop_aspect
+        )
+        if res.get("success"):
+            res["original_url"] = f"/data/uploads/{orig_filename}"
+        return res
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # --- Settings Endpoints ---
 

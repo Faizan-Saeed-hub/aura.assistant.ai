@@ -177,6 +177,23 @@ TOOLS_SCHEMA = [
     {
         "type": "function",
         "function": {
+            "name": "generate_image",
+            "description": "Generate high-resolution AI artwork, photos, or concept art from a descriptive text prompt using Pollinations AI (100% Free, instant).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "Visual prompt describing the image to generate, e.g. 'futuristic sports car in neon city at night, 8k resolution, cinematic lighting'"
+                    }
+                },
+                "required": ["prompt"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "list_memories",
             "description": "List all active long-term memories and facts stored about the user.",
             "parameters": {
@@ -193,6 +210,13 @@ TOOLS_SCHEMA = [
 ]
 
 from backend.memory.long_term import long_term_memory
+from backend.tools.image_studio import generate_ai_image
+
+def tool_generate_image(prompt: str) -> str:
+    res = generate_ai_image(prompt)
+    if res.get("success"):
+        return f"AI Image generated successfully!\n\n![{prompt}]({res['image_url']})\n\n[Open Full Size Image]({res['image_url']})"
+    return f"Failed to generate image: {res.get('error', 'Unknown error')}"
 
 def tool_remember_fact(fact: str, category: str = "fact") -> str:
     if not fact or not str(fact).strip():
@@ -233,6 +257,7 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "remember_fact": lambda args: tool_remember_fact(args.get("fact", ""), args.get("category", "fact")),
     "forget_memory": lambda args: tool_forget_memory(args.get("query_or_id", "")),
     "list_memories": lambda args: tool_list_memories(args.get("limit", 10)),
+    "generate_image": lambda args: tool_generate_image(args.get("prompt", "")),
 }
 
 def execute_tool(name: str, arguments: Any) -> str:

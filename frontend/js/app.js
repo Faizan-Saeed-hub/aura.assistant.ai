@@ -8,6 +8,8 @@ let voiceOutputEnabled = localStorage.getItem("aura_voice_tts") === "true"; // D
 let isRecording = false;
 let speechRecognizer = null;
 let activeView = "dashboard"; // "dashboard" | "chat"
+let activeChatAttachedImage = null;
+let activeChatRetouchPreset = "glow";
 
 document.addEventListener("DOMContentLoaded", () => {
   initVoiceRecognition();
@@ -306,13 +308,160 @@ function bindEvents() {
     handleSendMessage();
   });
 
-  // Quick Attach / Upload
+  // --- Quick Plus Action Popover Menu ---
   const quickAttachBtn = document.getElementById("quick-attach-btn");
+  const omnibarPlusMenu = document.getElementById("omnibar-plus-menu");
+  const closePlusMenuBtn = document.getElementById("close-plus-menu-btn");
   const quickFileInput = document.getElementById("quick-file-input");
-  quickAttachBtn.addEventListener("click", () => quickFileInput.click());
-  quickFileInput.addEventListener("change", (e) => {
-    if (e.target.files.length > 0) uploadFile(e.target.files[0]);
+  const chatPhotoInput = document.getElementById("chat-photo-input");
+
+  function togglePlusMenu() {
+    if (!omnibarPlusMenu) return;
+    const isShown = omnibarPlusMenu.style.display === "flex";
+    omnibarPlusMenu.style.display = isShown ? "none" : "flex";
+  }
+
+  function closePlusMenu() {
+    if (omnibarPlusMenu) omnibarPlusMenu.style.display = "none";
+  }
+
+  if (quickAttachBtn) {
+    quickAttachBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePlusMenu();
+    });
+  }
+
+  if (closePlusMenuBtn) {
+    closePlusMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closePlusMenu();
+    });
+  }
+
+  // Close plus menu on outside click
+  document.addEventListener("click", (e) => {
+    if (omnibarPlusMenu && omnibarPlusMenu.style.display === "flex") {
+      if (!omnibarPlusMenu.contains(e.target) && e.target !== quickAttachBtn && !quickAttachBtn.contains(e.target)) {
+        closePlusMenu();
+      }
+    }
   });
+
+  // Action 1: Upload & Retouch Photo
+  const plusActionUploadPhoto = document.getElementById("plus-action-upload-photo");
+  if (plusActionUploadPhoto && chatPhotoInput) {
+    plusActionUploadPhoto.addEventListener("click", () => {
+      closePlusMenu();
+      chatPhotoInput.click();
+    });
+  }
+
+  // Action 2: Generate AI Image
+  const plusActionGenImage = document.getElementById("plus-action-gen-image");
+  if (plusActionGenImage) {
+    plusActionGenImage.addEventListener("click", () => {
+      closePlusMenu();
+      const input = document.getElementById("user-input");
+      input.value = "Generate an image of ";
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
+  }
+
+  // Action 3: Open Full Image Studio
+  const plusActionFullImage = document.getElementById("plus-action-full-image-studio");
+  if (plusActionFullImage) {
+    plusActionFullImage.addEventListener("click", () => {
+      closePlusMenu();
+      switchView("image");
+    });
+  }
+
+  // Action 4: Draft Email in Chat
+  const plusActionDraftEmail = document.getElementById("plus-action-draft-email");
+  if (plusActionDraftEmail) {
+    plusActionDraftEmail.addEventListener("click", () => {
+      closePlusMenu();
+      const input = document.getElementById("user-input");
+      input.value = "Draft a professional business email proposing our AI automation services, highlighting efficiency gains and requesting a short meeting.";
+      input.focus();
+    });
+  }
+
+  // Action 5: Open Full Email Studio
+  const plusActionFullEmail = document.getElementById("plus-action-full-email-studio");
+  if (plusActionFullEmail) {
+    plusActionFullEmail.addEventListener("click", () => {
+      closePlusMenu();
+      switchView("email");
+    });
+  }
+
+  // Action 6: Upload Document (RAG)
+  const plusActionUploadDoc = document.getElementById("plus-action-upload-doc");
+  if (plusActionUploadDoc && quickFileInput) {
+    plusActionUploadDoc.addEventListener("click", () => {
+      closePlusMenu();
+      quickFileInput.click();
+    });
+  }
+
+  if (quickFileInput) {
+    quickFileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) uploadFile(e.target.files[0]);
+    });
+  }
+
+  // --- Photo Attachment & In-Chat Retouch Tray Setup ---
+  const chatAttachmentTray = document.getElementById("chat-attachment-tray");
+  const attachmentPreviewImg = document.getElementById("attachment-preview-img");
+  const attachmentFileName = document.getElementById("attachment-file-name");
+  const attachmentFileDesc = document.getElementById("attachment-file-desc");
+  const chatRetouchPresets = document.getElementById("chat-retouch-presets");
+  const removeAttachmentBtn = document.getElementById("remove-attachment-btn");
+
+  if (chatPhotoInput) {
+    chatPhotoInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        activeChatAttachedImage = file;
+        activeChatRetouchPreset = "glow";
+
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          if (attachmentPreviewImg) {
+            attachmentPreviewImg.src = re.target.result;
+            attachmentPreviewImg.style.display = "block";
+          }
+          if (attachmentFileName) attachmentFileName.textContent = file.name;
+          if (attachmentFileDesc) attachmentFileDesc.textContent = `${(file.size / 1024).toFixed(0)} KB • Photo Attached`;
+          if (chatRetouchPresets) chatRetouchPresets.style.display = "flex";
+          if (chatAttachmentTray) chatAttachmentTray.style.display = "flex";
+
+          const inputEl = document.getElementById("user-input");
+          if (inputEl && !inputEl.value.trim()) {
+            inputEl.placeholder = "Prompt (e.g. 'Natural face glow & WhatsApp DP crop') or press Send...";
+          }
+          if (inputEl) inputEl.focus();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  document.querySelectorAll(".chat-preset-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".chat-preset-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeChatRetouchPreset = chip.dataset.preset;
+    });
+  });
+
+  if (removeAttachmentBtn) {
+    removeAttachmentBtn.addEventListener("click", clearChatAttachment);
+  }
+
 
   const dashQuickUpload = document.getElementById("dash-quick-upload-btn");
   if (dashQuickUpload) {
@@ -689,28 +838,112 @@ async function deleteSession(sessionId) {
   loadSessions();
 }
 
+function clearChatAttachment() {
+  activeChatAttachedImage = null;
+  activeChatRetouchPreset = "glow";
+  const chatPhotoInput = document.getElementById("chat-photo-input");
+  if (chatPhotoInput) chatPhotoInput.value = "";
+  const chatAttachmentTray = document.getElementById("chat-attachment-tray");
+  if (chatAttachmentTray) chatAttachmentTray.style.display = "none";
+  const inputEl = document.getElementById("user-input");
+  if (inputEl) {
+    inputEl.placeholder = "Ask anything, describe an image, retouch a photo, draft an email, or search...";
+  }
+}
+
 // --- Messaging Flow ---
 async function handleSendMessage() {
   const inputEl = document.getElementById("user-input");
   const sendBtn = document.getElementById("send-btn");
   const text = inputEl.value.trim();
-  if (!text) return;
+
+  // If nothing typed and no photo attached, return
+  if (!text && !activeChatAttachedImage) return;
 
   // 1. Immediately abort voice recognition & reset dictation buffers
   stopVoiceRecording();
   accumulatedDictation = "";
 
-  // 2. Clear input field immediately and reset height
+  // 2. Handle Attached Photo Retouching if active
+  if (activeChatAttachedImage) {
+    const photoFile = activeChatAttachedImage;
+    const preset = activeChatRetouchPreset || "glow";
+    const userPrompt = text || `Retouch this photo with ${preset.toUpperCase()} preset and natural face glow.`;
+
+    inputEl.value = "";
+    inputEl.style.height = "auto";
+    inputEl.dispatchEvent(new Event("input"));
+    clearChatAttachment();
+
+    switchView("chat");
+
+    if (!currentSessionId) {
+      const sRes = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Photo Retouch Studio" })
+      });
+      const sData = await sRes.json();
+      currentSessionId = sData.id;
+    }
+
+    const localPreviewUrl = URL.createObjectURL(photoFile);
+    const userMsgHtml = `${escapeHtml(userPrompt)}<br/><div class="chat-attached-user-img" style="margin-top:8px;"><img src="${localPreviewUrl}" style="max-width:220px; max-height:220px; border-radius:12px; display:block; border:1px solid rgba(255,255,255,0.4);" /></div>`;
+    appendMessageUI("user", userMsgHtml);
+    scrollToBottom();
+
+    showActivity("Aura is enhancing & retouching your photo with AI...");
+    sendBtn.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append("file", photoFile);
+      formData.append("preset", preset);
+      if (preset === "crop_dp") {
+        formData.append("crop_aspect", "1:1");
+      }
+
+      const res = await fetch("/api/image/retouch", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      hideActivity();
+      sendBtn.disabled = false;
+
+      if (data.success && data.url) {
+        const assistantText = `✨ **Photo Retouched Successfully!**\n\n` +
+          `Applied **${preset.toUpperCase()}** preset (${data.details || 'Natural lighting & skin enhance'}).\n\n` +
+          `<div class="chat-image-card">` +
+            `<div class="chat-image-preview"><img src="${data.url}" alt="Retouched Photo" /></div>` +
+            `<div class="chat-image-actions">` +
+              `<a href="${data.url}" download="${data.filename}" class="btn-chat-img-action primary"><i class="fa-solid fa-download"></i> Download</a>` +
+              `<button type="button" class="btn-chat-img-action" onclick="setAsAccountDPFromChat('${data.url}')"><i class="fa-solid fa-user-check"></i> Set as Profile DP</button>` +
+              `<button type="button" class="btn-chat-img-action" onclick="openImageInStudio('${data.url}')"><i class="fa-solid fa-sliders"></i> Fine-Tune in Studio</button>` +
+            `</div>` +
+          `</div>`;
+        appendMessageUI("assistant", assistantText);
+        scrollToBottom();
+      } else {
+        appendMessageUI("assistant", `⚠️ Photo retouch failed: ${data.error || "Unknown error"}`);
+      }
+    } catch (err) {
+      hideActivity();
+      sendBtn.disabled = false;
+      appendMessageUI("assistant", `⚠️ Error processing image: ${err.message}`);
+    }
+    return;
+  }
+
+  // 3. Normal Text Chat Message Flow
   inputEl.value = "";
   inputEl.style.height = "auto";
   inputEl.dispatchEvent(new Event("input"));
 
-  // 3. Blur input to clear any virtual keyboard / composition state
   if (document.activeElement === inputEl) {
     inputEl.blur();
   }
 
-  // 4. Double safeguard to prevent browser speech events from re-populating text
   setTimeout(() => {
     inputEl.value = "";
     inputEl.style.height = "auto";
@@ -720,10 +953,8 @@ async function handleSendMessage() {
     inputEl.style.height = "auto";
   }, 150);
 
-  // Switch to Chat View immediately
   switchView("chat");
 
-  // If no session active, create one
   if (!currentSessionId) {
     const sRes = await fetch("/api/sessions", {
       method: "POST",
@@ -734,11 +965,9 @@ async function handleSendMessage() {
     currentSessionId = sData.id;
   }
 
-  // Render User Message
   appendMessageUI("user", text);
   scrollToBottom();
 
-  // Show Agent Activity
   showActivity("Aura is reasoning & executing tools...");
   sendBtn.disabled = true;
 
@@ -761,11 +990,9 @@ async function handleSendMessage() {
     hideActivity();
     sendBtn.disabled = false;
 
-    // Render Assistant Response
     appendMessageUI("assistant", data.text, data.tool_calls, data.citations);
     scrollToBottom();
 
-    // Voice TTS
     if (voiceOutputEnabled && data.text) {
       speakText(data.text);
     }
@@ -803,16 +1030,19 @@ function appendMessageUI(role, content, toolCalls = [], citations = []) {
         wikipedia_lookup: "fa-brands fa-wikipedia-w",
         get_system_info: "fa-solid fa-clock",
         add_note: "fa-solid fa-clipboard",
-        list_notes: "fa-solid fa-list-check"
+        list_notes: "fa-solid fa-list-check",
+        generate_image: "fa-solid fa-paintbrush"
       };
       const icon = toolIcons[tc.tool] || "fa-solid fa-wrench";
       innerHTML += `<div class="tool-badge-pill"><i class="${icon}"></i> Executed ${tc.tool}</div><br/>`;
     });
   }
 
-  // Render Markdown
+  // Render Content
   if (role === "assistant" && typeof marked !== "undefined") {
     innerHTML += marked.parse(content || "");
+  } else if (content.includes("<img") || content.includes("<div") || content.includes("<br/>")) {
+    innerHTML += content;
   } else {
     innerHTML += `<p>${escapeHtml(content || "")}</p>`;
   }
@@ -831,6 +1061,37 @@ function appendMessageUI(role, content, toolCalls = [], citations = []) {
   }
 
   bubble.innerHTML = innerHTML;
+
+  // Enhance standalone images in assistant responses with action buttons
+  if (role === "assistant") {
+    const imgs = bubble.querySelectorAll("img");
+    imgs.forEach((img) => {
+      if (img.closest(".chat-image-card") || img.closest(".chat-attached-user-img")) return;
+      const src = img.getAttribute("src");
+      if (!src) return;
+
+      const card = document.createElement("div");
+      card.className = "chat-image-card";
+
+      const preview = document.createElement("div");
+      preview.className = "chat-image-preview";
+      const clonedImg = img.cloneNode(true);
+      preview.appendChild(clonedImg);
+
+      const actions = document.createElement("div");
+      actions.className = "chat-image-actions";
+      actions.innerHTML = `
+        <a href="${src}" target="_blank" download="aura_image.png" class="btn-chat-img-action primary"><i class="fa-solid fa-download"></i> Download</a>
+        <button type="button" class="btn-chat-img-action" onclick="setAsAccountDPFromChat('${src}')"><i class="fa-solid fa-user-check"></i> Set as Profile DP</button>
+        <button type="button" class="btn-chat-img-action" onclick="openImageInStudio('${src}')"><i class="fa-solid fa-sliders"></i> Open in Studio</button>
+      `;
+
+      card.appendChild(preview);
+      card.appendChild(actions);
+      img.replaceWith(card);
+    });
+  }
+
   row.appendChild(avatar);
   row.appendChild(bubble);
   container.appendChild(row);
@@ -839,6 +1100,59 @@ function appendMessageUI(role, content, toolCalls = [], citations = []) {
     Prism.highlightAllUnder(bubble);
   }
 }
+
+// Global Image Actions from Chat
+window.setAsAccountDPFromChat = async function(imageUrl) {
+  try {
+    showToast("Updating your profile picture...");
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+    const file = new File([blob], "profile_dp.jpg", { type: blob.type || "image/jpeg" });
+    const uploadedUrl = await uploadAvatarFile(file);
+    if (uploadedUrl) {
+      const profRes = await fetch("/api/user/profile");
+      if (profRes.ok) {
+        const curr = await profRes.json();
+        const updateRes = await fetch("/api/user/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: curr.name,
+            email: curr.email,
+            gender: curr.gender || "male",
+            role: curr.role,
+            avatar_url: uploadedUrl,
+            bio: curr.bio
+          })
+        });
+        if (updateRes.ok) {
+          const uData = await updateRes.json();
+          applyUserProfileToUI(uData.user);
+          showToast("🎉 Profile DP updated with this image!");
+        }
+      }
+    }
+  } catch (err) {
+    showToast(`⚠️ Failed to update DP: ${err.message}`);
+  }
+};
+
+window.openImageInStudio = function(imageUrl) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    studioImage = img;
+    const dropzone = document.getElementById("studio-canvas-dropzone");
+    if (dropzone) dropzone.classList.add("has-image");
+    const emptyOverlay = document.getElementById("studio-empty-overlay");
+    if (emptyOverlay) emptyOverlay.style.display = "none";
+    switchView("image");
+    invalidateRetouchCache();
+    renderStudioCanvas();
+    showToast("🎨 Loaded photo into Image Studio!");
+  };
+  img.src = imageUrl;
+};
 
 function showActivity(msg) {
   const bar = document.getElementById("agent-activity-bar");

@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Marked.js for fast Markdown formatting and image rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
@@ -702,18 +704,109 @@
           </div>
         </div>
 
-        <!-- Bottom Floating Omnibar (Present in dashboard and chat views!) -->
+        <!-- Bottom Fixed Omnibar (Clean pinned bottom bar with Quick Studio & Action Launchers) -->
         <div class="omnibar-container" id="chat-omnibar">
+          <!-- Quick Plus Action Popover Menu -->
+          <div class="omnibar-plus-menu" id="omnibar-plus-menu" style="display: none;">
+            <div class="plus-menu-header">
+              <span><i class="fa-solid fa-bolt text-indigo"></i> Quick Actions & Studios</span>
+              <button type="button" class="btn-close-plus-menu" id="close-plus-menu-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="plus-menu-section">
+              <div class="plus-section-title"><i class="fa-solid fa-wand-magic-sparkles text-amber"></i> Image Studio & Retouch</div>
+              <button type="button" class="plus-menu-item" id="plus-action-upload-photo">
+                <div class="plus-item-icon image-icon"><i class="fa-solid fa-camera-retro"></i></div>
+                <div class="plus-item-text">
+                  <strong>Upload & Retouch Photo</strong>
+                  <span>Natural face glow, dark circles remover & DP crop</span>
+                </div>
+              </button>
+              <button type="button" class="plus-menu-item" id="plus-action-gen-image">
+                <div class="plus-item-icon ai-art-icon"><i class="fa-solid fa-paintbrush"></i></div>
+                <div class="plus-item-text">
+                  <strong>Generate AI Image</strong>
+                  <span>Describe any artwork, character, or scene in chat</span>
+                </div>
+              </button>
+              <button type="button" class="plus-menu-item" id="plus-action-full-image-studio">
+                <div class="plus-item-icon studio-icon"><i class="fa-solid fa-sliders"></i></div>
+                <div class="plus-item-text">
+                  <strong>Open Full Image Studio</strong>
+                  <span>Interactive canvas with real-time sliders & presets</span>
+                </div>
+              </button>
+            </div>
+
+            <div class="plus-menu-divider"></div>
+
+            <div class="plus-menu-section">
+              <div class="plus-section-title"><i class="fa-solid fa-envelope text-indigo"></i> AI Email Studio</div>
+              <button type="button" class="plus-menu-item" id="plus-action-draft-email">
+                <div class="plus-item-icon email-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                <div class="plus-item-text">
+                  <strong>Draft Email in Chat</strong>
+                  <span>Outreach, pitch, job application, or follow-up note</span>
+                </div>
+              </button>
+              <button type="button" class="plus-menu-item" id="plus-action-full-email-studio">
+                <div class="plus-item-icon studio-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+                <div class="plus-item-text">
+                  <strong>Open Full Email Studio</strong>
+                  <span>Dedicated multi-tone drafter with microphone dictation</span>
+                </div>
+              </button>
+            </div>
+
+            <div class="plus-menu-divider"></div>
+
+            <div class="plus-menu-section">
+              <div class="plus-section-title"><i class="fa-solid fa-database text-emerald"></i> Knowledge Base</div>
+              <button type="button" class="plus-menu-item" id="plus-action-upload-doc">
+                <div class="plus-item-icon doc-icon"><i class="fa-solid fa-file-arrow-up"></i></div>
+                <div class="plus-item-text">
+                  <strong>Upload Document (RAG)</strong>
+                  <span>Index PDF, Word, TXT into Assistant Knowledge Base</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- In-Chat Image / Document Attachment Tray -->
+          <div class="chat-attachment-tray" id="chat-attachment-tray" style="display: none;">
+            <div class="attachment-preview-box">
+              <img id="attachment-preview-img" src="" alt="Selected preview" style="display: none;" />
+              <i id="attachment-preview-doc-icon" class="fa-solid fa-file-lines" style="display: none;"></i>
+              <div class="attachment-info">
+                <span id="attachment-file-name" class="attachment-name">photo.jpg</span>
+                <span id="attachment-file-desc" class="attachment-desc">Ready to retouch or analyze</span>
+              </div>
+            </div>
+            <!-- Quick In-Chat Retouch Presets Pill Group -->
+            <div class="chat-retouch-presets" id="chat-retouch-presets" style="display: none;">
+              <span class="preset-tag-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Preset:</span>
+              <button type="button" class="chat-preset-chip active" data-preset="glow">✨ Face Glow</button>
+              <button type="button" class="chat-preset-chip" data-preset="undereye">👁️ Conceal Dark Circles</button>
+              <button type="button" class="chat-preset-chip" data-preset="glam">💎 Glam Portrait</button>
+              <button type="button" class="chat-preset-chip" data-preset="crop_dp">📷 1:1 WhatsApp DP</button>
+              <button type="button" class="chat-preset-chip" data-preset="bw">🖤 B&W Studio</button>
+            </div>
+            <button type="button" class="btn-remove-attachment" id="remove-attachment-btn" title="Remove attachment">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
           <form class="omnibar-form" id="chat-form">
-            <button type="button" class="btn-omnibar-tool" id="quick-attach-btn" title="Attach Document for RAG">
+            <button type="button" class="btn-omnibar-tool" id="quick-attach-btn" title="Quick Actions & Studios">
               <i class="fa-solid fa-plus"></i>
             </button>
             <input type="file" id="quick-file-input" style="display: none;" accept=".pdf,.txt,.md,.docx,.csv" />
+            <input type="file" id="chat-photo-input" style="display: none;" accept="image/*" />
 
             <textarea
               id="user-input"
               rows="1"
-              placeholder="Ask or search for anything. Use tools, search web, or compute..."
+              placeholder="Ask anything, describe an image, retouch a photo, draft an email, or search..."
               autocomplete="off"
             ></textarea>
 
@@ -730,6 +823,7 @@
             </button>
           </form>
         </div>
+
       </main>
     </div>
   </div>
