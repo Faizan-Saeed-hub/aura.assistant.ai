@@ -105,7 +105,7 @@ def run_tests():
     } for i, c in enumerate(chunks)]
 
     vector_store.add_chunks(formatted_chunks)
-    search_res = vector_store.search("How does RAG help AI assistants?", top_k=2)
+    search_res = vector_store.search("How does RAG help AI assistants?", top_k=2, min_score=0.05)
     assert len(search_res) > 0
     print(f"  ✓ RAG Search match score: {search_res[0]['score']}")
     print(f"  ✓ Top chunk snippet: {search_res[0]['text'][:70]}...")

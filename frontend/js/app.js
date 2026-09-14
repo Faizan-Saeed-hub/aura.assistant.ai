@@ -340,8 +340,7 @@ function bindEvents() {
         });
         const data = await res.json();
         if (res.ok && data.success && data.user) {
-          currentUser = data.user;
-          localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+          saveUserSession(data.user);
           applyUserProfileToUI(currentUser);
           closeModal("profile-modal");
           loadSessions();
@@ -388,8 +387,7 @@ function bindEvents() {
         const data = await res.json();
         if (res.ok && data.success) {
           if (data.user) {
-            currentUser = data.user;
-            localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+            saveUserSession(data.user);
             applyUserProfileToUI(currentUser);
           }
           closeModal("profile-modal");
@@ -421,9 +419,7 @@ function bindEvents() {
       try {
         await fetch("/api/auth/logout", { method: "POST" });
       } catch (e) {}
-      currentUser = null;
-      localStorage.removeItem("aura_current_user");
-      sessionStorage.removeItem("aura_guest_dismissed");
+      clearUserSession();
       applyGuestUserToUI();
       closeModal("profile-modal");
       loadSessions();
@@ -436,8 +432,8 @@ function bindEvents() {
         });
         loadSettings();
       } catch (e) {}
-      showToast("Signed out. Guest mode active (Free Groq).");
-      showWelcomeGateway("choices");
+      showToast("Signed out. Please sign in to continue.");
+      showWelcomeGateway("signin");
     });
   }
 
@@ -2035,8 +2031,52 @@ async function loadSettings() {
   }
 }
 
+// --- Auth State & Session TTL (24-Hour Expiration Rule) ---
+const AUTH_SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (1 day)
+
+function saveUserSession(user) {
+  currentUser = user;
+  try {
+    localStorage.setItem("aura_current_user", JSON.stringify(user));
+    localStorage.setItem("aura_auth_timestamp", Date.now().toString());
+  } catch (e) {}
+}
+
+function clearUserSession() {
+  currentUser = null;
+  try {
+    localStorage.removeItem("aura_current_user");
+    localStorage.removeItem("aura_auth_timestamp");
+    sessionStorage.removeItem("aura_guest_dismissed");
+  } catch (e) {}
+}
+
+function isUserSessionExpired() {
+  try {
+    const timestampStr = localStorage.getItem("aura_auth_timestamp");
+    if (!timestampStr) return true;
+    const timestamp = parseInt(timestampStr, 10);
+    if (isNaN(timestamp)) return true;
+    return (Date.now() - timestamp) > AUTH_SESSION_TTL_MS;
+  } catch (e) {
+    return true;
+  }
+}
+
 // --- Auth State & User Profile Management ---
 async function checkAuthStatus() {
+  // Enforce 24-hour expiration policy: never stay logged in past 1 day
+  if (isUserSessionExpired()) {
+    const hadUser = !!localStorage.getItem("aura_current_user");
+    clearUserSession();
+    applyGuestUserToUI();
+    showWelcomeGateway("signin");
+    if (hadUser) {
+      showToast("🕒 Your 24-hour session has expired. Please sign in to continue.");
+    }
+    return;
+  }
+
   try {
     const saved = localStorage.getItem("aura_current_user");
     if (saved) {
@@ -2046,14 +2086,20 @@ async function checkAuthStatus() {
     currentUser = null;
   }
 
+  if (!currentUser) {
+    clearUserSession();
+    applyGuestUserToUI();
+    showWelcomeGateway("signin");
+    return;
+  }
+
   try {
     const query = currentUser?.id ? `?user_id=${currentUser.id}` : "";
     const res = await fetch(`/api/auth/status${query}`);
     if (res.ok) {
       const data = await res.json();
       if (data.authenticated && data.user) {
-        currentUser = data.user;
-        localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+        saveUserSession(data.user);
         applyUserProfileToUI(currentUser);
         hideWelcomeGateway();
         return;
@@ -2067,13 +2113,9 @@ async function checkAuthStatus() {
     applyUserProfileToUI(currentUser);
     hideWelcomeGateway();
   } else {
+    clearUserSession();
     applyGuestUserToUI();
-    const guestDismissed = sessionStorage.getItem("aura_guest_dismissed") === "true";
-    if (!guestDismissed) {
-      showWelcomeGateway("choices");
-    } else {
-      hideWelcomeGateway();
-    }
+    showWelcomeGateway("signin");
   }
 }
 
@@ -2243,8 +2285,7 @@ function initWelcomeGateway() {
         });
         const data = await res.json();
         if (res.ok && data.success && data.user) {
-          currentUser = data.user;
-          localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+          saveUserSession(data.user);
           sessionStorage.setItem("aura_guest_dismissed", "true");
           applyUserProfileToUI(currentUser);
           hideWelcomeGateway();
@@ -2300,8 +2341,7 @@ function initWelcomeGateway() {
         const data = await res.json();
         if (res.ok && data.success) {
           if (data.user) {
-            currentUser = data.user;
-            localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+            saveUserSession(data.user);
             sessionStorage.setItem("aura_guest_dismissed", "true");
             applyUserProfileToUI(currentUser);
           }
@@ -3684,7 +3724,7 @@ async function applyImageBackgroundChange() {
   const originalText = applyBtn ? applyBtn.innerHTML : "";
   if (applyBtn) {
     applyBtn.disabled = true;
-    applyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Background...';
+    applyBtn.innerHTML = '<i class="fa-solid fa-person-rays fa-beat"></i> AI Detecting Subject & Isolating BG...';
   }
 
   try {
@@ -3705,7 +3745,8 @@ async function applyImageBackgroundChange() {
         new_bg_color: passportNewBgColor,
         target_bg_color: passportTargetBgColor,
         tolerance: passportTolerance,
-        feather: passportFeather
+        feather: passportFeather,
+        use_ai: true
       })
     });
 

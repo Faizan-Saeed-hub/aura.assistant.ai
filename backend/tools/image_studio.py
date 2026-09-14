@@ -155,19 +155,42 @@ def retouch_image_file(
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+import logging
+logger = logging.getLogger("aura.image_studio")
+
+_REMBG_SESSION = None
+
+def get_rembg_session():
+    """
+    Lazily loads and caches the rembg session using u2net_human_seg
+    (specialized in human body/portrait matting) or u2net fallback.
+    """
+    global _REMBG_SESSION
+    if _REMBG_SESSION is None:
+        try:
+            import rembg
+            try:
+                _REMBG_SESSION = rembg.new_session("u2net_human_seg")
+            except Exception:
+                _REMBG_SESSION = rembg.new_session("u2net")
+        except Exception as e:
+            logger.warning(f"rembg session initialization error: {e}")
+            _REMBG_SESSION = False
+    return _REMBG_SESSION if _REMBG_SESSION is not False else None
+
 def replace_image_background(
     image_input: Any,
     new_bg_color: str = "#ffffff",
     target_bg_color: Optional[str] = None,
     tolerance: int = 35,
     feather: int = 3,
-    use_ai: bool = False
+    use_ai: bool = True
 ) -> Dict[str, Any]:
     """
     Image Background Changer (Passport / Portrait / Cutout):
     Replaces the image background color (e.g. blue passport background to white)
     while keeping the subject/person intact.
-    Supports AI deep matting via rembg if requested/available, or smart color-distance matting with feathering.
+    Supports AI deep matting via rembg (u2net_human_seg) or smart color-distance matting with feathering.
     """
     try:
         import io
@@ -190,23 +213,29 @@ def replace_image_background(
         w, h = img.size
         processed_img = None
 
-        # 1. Try deep AI cutout via rembg if requested or if general background is complex
+        # 1. Deep AI Human & Subject Cutout via rembg
         if use_ai:
             try:
                 import rembg
-                # rembg produces transparent RGBA
-                no_bg = rembg.remove(img)
+                session = get_rembg_session()
+                if session is not None:
+                    no_bg = rembg.remove(img, session=session, post_process_mask=True)
+                else:
+                    no_bg = rembg.remove(img, post_process_mask=True)
+
                 if new_bg_color.lower() == "transparent":
                     processed_img = no_bg
                 else:
                     hex_c = new_bg_color.lstrip("#")
+                    if len(hex_c) == 3:
+                        hex_c = "".join(c * 2 for c in hex_c)
                     bg_rgb = tuple(int(hex_c[i:i+2], 16) for i in (0, 2, 4))
                     solid_bg = Image.new("RGBA", (w, h), (*bg_rgb, 255))
-                    solid_bg.paste(no_bg, (0, 0), no_bg)
+                    solid_bg.alpha_composite(no_bg)
                     processed_img = solid_bg.convert("RGB")
             except Exception as e:
-                # Fall back to smart color matting
-                pass
+                logger.warning(f"AI background removal failed, falling back to color matting: {e}")
+                processed_img = None
 
         # 2. Smart perimeter-connected segmentation
         if processed_img is None:

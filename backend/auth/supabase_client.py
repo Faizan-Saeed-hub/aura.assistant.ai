@@ -105,9 +105,30 @@ class SupabaseAuthManager:
                             "message": "Logged in successfully with Supabase!"
                         }
                     else:
+                        # Fallback to local authentication if user exists in local database
+                        from backend.database import authenticate_user
+                        local_user = authenticate_user(email, password)
+                        if local_user:
+                            return {
+                                "success": True,
+                                "mode": "local_fallback",
+                                "user": local_user,
+                                "token": f"local_sess_{uuid.uuid4().hex[:16]}",
+                                "message": "Signed in successfully!"
+                            }
                         return {"success": False, "error": data.get("error_description", "Invalid login credentials")}
             except Exception as e:
-                return {"success": False, "error": f"Supabase auth error: {str(e)}"}
+                from backend.database import authenticate_user
+                local_user = authenticate_user(email, password)
+                if local_user:
+                    return {
+                        "success": True,
+                        "mode": "local_offline",
+                        "user": local_user,
+                        "token": f"local_sess_{uuid.uuid4().hex[:16]}",
+                        "message": "Signed in successfully (Offline Mode)!"
+                    }
+                return {"success": False, "error": f"Authentication error: {str(e)}"}
 
         # Local account match
         from backend.database import authenticate_user
