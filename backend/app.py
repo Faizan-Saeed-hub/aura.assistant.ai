@@ -104,8 +104,13 @@ class ChangeBgRequest(BaseModel):
     feather: Optional[int] = 3
     use_ai: Optional[bool] = False
 
-# --- Chat & Session Endpoints ---
+# --- Health & Ping Endpoints (For Render Uptime Robots) ---
+@app.get("/api/health")
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "app": "Aura AI Assistant"}
 
+# --- Chat & Session Endpoints ---
 
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):

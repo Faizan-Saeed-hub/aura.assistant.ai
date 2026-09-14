@@ -47,7 +47,29 @@
   padding: 0;
   box-sizing: border-box;
   font-family: var(--font-main);
-  -webkit-font-smoothing: antialiased;
+/* Visible Elegant Scrollbars Across Entire Site & Mobile Views */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 9999px;
+  border: 2px solid #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
 }
 
 body {
@@ -3770,9 +3792,11 @@ body {
 /* TABLETS & MOBILE DEVICES (max-width: 768px) */
 @media (max-width: 768px) {
   body {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto !important;
     height: 100vh;
     height: 100dvh;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .window-frame {
@@ -3780,6 +3804,7 @@ body {
     height: 100dvh;
     width: 100vw;
     border-radius: 0;
+    overflow-y: auto !important;
   }
 
   /* Header Layout */
@@ -3869,6 +3894,9 @@ body {
     width: 100vw;
     height: calc(100vh - 52px);
     height: calc(100dvh - 52px);
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   /* Dashboard Home View */
@@ -4053,16 +4081,21 @@ body {
   }
 
   .studio-page-view {
-    padding: 12px 8px 90px 8px !important;
+    padding: 10px 8px 140px 8px !important;
+    overflow-y: auto !important;
     overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: calc(100vh - 52px) !important;
+    height: calc(100dvh - 52px) !important;
     width: 100% !important;
+    scrollbar-width: thin !important;
   }
 
   .studio-full-card {
-    padding: 12px 10px !important;
+    padding: 10px 8px !important;
     border-radius: var(--radius-lg) !important;
     width: 100% !important;
-    overflow-x: hidden !important;
+    overflow: visible !important;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05) !important;
   }
 
@@ -4077,40 +4110,41 @@ body {
   .image-upload-bar .btn-accent-pill {
     width: 100% !important;
     justify-content: center !important;
-    min-height: 42px !important;
+    min-height: 40px !important;
   }
 
-  /* Image Studio Workspace - Mobile ZERO OVERLAP Optimized */
+  /* Image Studio Workspace - Mobile ZERO OVERLAP & Full Scroll */
   .image-studio-workspace {
     display: flex !important;
     flex-direction: column !important;
-    gap: 16px !important;
+    gap: 14px !important;
     width: 100% !important;
-    overflow-x: hidden !important;
+    overflow: visible !important;
   }
 
+  /* Compact Sticky Preview: Takes ~200px max, leaving full screen for scrolling options below */
   .studio-preview-panel {
     width: 100% !important;
     order: -1 !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 8px !important;
+    gap: 6px !important;
     min-height: auto !important;
     max-height: none !important;
     position: sticky !important;
     top: 0 !important;
-    z-index: 25 !important;
+    z-index: 30 !important;
     background: #ffffff !important;
-    padding-top: 6px !important;
-    padding-bottom: 8px !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.08) !important;
+    padding: 6px 6px 8px 6px !important;
+    border-radius: 0 0 var(--radius-md) var(--radius-md) !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.1) !important;
   }
 
   .canvas-container-outer {
-    min-height: 180px !important;
-    max-height: 230px !important;
-    height: 200px !important;
+    height: 150px !important;
+    min-height: 120px !important;
+    max-height: 170px !important;
     width: 100% !important;
     position: relative !important;
     overflow: hidden !important;
@@ -4128,31 +4162,35 @@ body {
 
   .studio-footer-meta {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 8px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
     width: 100% !important;
   }
 
   .preset-info-badge {
-    width: 100% !important;
-    justify-content: center !important;
-    font-size: 0.72rem !important;
-    padding: 6px 10px !important;
+    width: auto !important;
+    font-size: 0.68rem !important;
+    padding: 4px 8px !important;
   }
 
   .studio-action-buttons {
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     width: 100% !important;
-    gap: 8px !important;
+    gap: 6px !important;
   }
 
   .studio-action-buttons button,
   .studio-action-buttons a {
     width: 100% !important;
-    min-height: 42px !important;
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 4px 6px !important;
     justify-content: center !important;
-    font-size: 0.82rem !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap !important;
   }
 
   .studio-controls-panel {
@@ -4160,6 +4198,7 @@ body {
     max-height: none !important;
     overflow: visible !important;
     padding-right: 0 !important;
+    padding-bottom: 120px !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 14px !important;
