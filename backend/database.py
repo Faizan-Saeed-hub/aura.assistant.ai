@@ -416,7 +416,8 @@ def delete_user_by_admin(user_id: int) -> Dict[str, Any]:
         conn.close()
         return {"success": False, "error": "User not found"}
     
-    if user["email"].lower() == "faizanbarvi786@gmail.com":
+    email = user["email"]
+    if email.lower() == "faizanbarvi786@gmail.com":
         conn.close()
         return {"success": False, "error": "Protected account: Cannot delete Super Administrator"}
     
@@ -428,6 +429,6 @@ def delete_user_by_admin(user_id: int) -> Dict[str, Any]:
     conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
-    return {"success": True, "message": f"User #{user_id} and all their data were permanently deleted"}
+    return {"success": True, "email": email, "message": f"User #{user_id} ({email}) and all their data were permanently deleted"}
 
 

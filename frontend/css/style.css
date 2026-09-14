@@ -4785,21 +4785,32 @@ body {
   padding: 0 4px;
 }
 
-/* Gateway Mobile Responsiveness */
+/* Gateway & Auth Mobile Responsiveness */
 @media (max-width: 768px) {
+  .welcome-gate-overlay {
+    padding: 12px;
+  }
+
   .welcome-gate-card {
-    padding: 24px 18px;
-    border-radius: 18px;
-    max-height: 92vh;
+    padding: 22px 16px;
+    border-radius: 20px;
+    max-height: 94vh;
+    max-height: 94dvh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gate-header {
+    margin-bottom: 20px;
   }
 
   .gate-title {
-    font-size: 1.5rem;
+    font-size: 1.45rem;
   }
 
   .gate-subtitle {
     font-size: 0.84rem;
+    line-height: 1.45;
   }
 
   .gate-choices-grid {
@@ -4808,11 +4819,98 @@ body {
   }
 
   .gate-choice-card {
-    padding: 16px 14px;
+    padding: 18px 16px;
+    border-radius: 14px;
   }
 
   .gate-choice-desc {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+    font-size: 0.8rem;
+  }
+
+  .gate-choice-btn {
+    min-height: 42px;
+    font-size: 0.84rem;
+  }
+
+  .gate-input {
+    font-size: 16px; /* Prevents auto-zoom on iOS */
+    padding: 12px 14px;
+  }
+
+  .gate-actions-row {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .btn-gate-submit, .btn-gate-back {
+    min-height: 44px;
+    font-size: 0.88rem;
+  }
+
+  /* Profile Modal Mobile Optimizations */
+  .profile-tabs-bar {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+
+  .profile-tabs-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-pill {
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .form-group-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .clean-input, .form-field input, .form-field textarea {
+    font-size: 16px !important; /* Prevents mobile Safari zoom */
+  }
+
+  .profile-header-preview {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+    padding: 12px;
   }
 }
+
+@media (max-width: 480px) {
+  .welcome-gate-card {
+    padding: 18px 14px;
+  }
+
+  .gate-title {
+    font-size: 1.25rem;
+  }
+
+  .gate-brand-badge {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+  }
+
+  .gate-actions-row {
+    flex-direction: column-reverse;
+  }
+
+  .btn-gate-back {
+    width: 100%;
+  }
+
+  .btn-gate-submit {
+    width: 100%;
+  }
+}
+
 

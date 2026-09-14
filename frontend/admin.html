@@ -2,68 +2,133 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aura AI - Super Admin Control Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Aura AI — Super Admin Control Center</title>
+  <!-- Google Fonts: Plus Jakarta Sans & Fira Code (Matching Main Website) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png" />
   <style>
     :root {
       --bg-dark: #090d16;
-      --card-bg: rgba(18, 24, 38, 0.88);
+      --bg-darker: #060911;
+      --card-bg: rgba(18, 24, 38, 0.85);
       --card-border: rgba(255, 255, 255, 0.09);
+      --card-border-hover: rgba(99, 102, 241, 0.4);
       --accent-primary: #6366f1;
-      --accent-hover: #4f46e5;
+      --accent-purple: #8b5cf6;
+      --accent-magenta: #d946ef;
       --accent-glow: rgba(99, 102, 241, 0.25);
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
       --danger: #ef4444;
       --danger-hover: #dc2626;
       --success: #10b981;
+      --warning: #f59e0b;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     body {
       background: var(--bg-dark);
       color: var(--text-main);
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
+      position: relative;
     }
 
-    /* Ambient Glow Orbs (Matching Main Website) */
-    .ambient-glow {
+    /* Ambient Dynamic Glow Orbs (Exact Match with Aura Main Web App) */
+    .ambient-glow-1 {
       position: fixed;
-      width: 500px;
-      height: 500px;
+      width: 520px;
+      height: 520px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(99, 102, 241, 0.14) 0%, rgba(0, 0, 0, 0) 70%);
-      top: -120px;
-      right: -80px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.16) 0%, rgba(0, 0, 0, 0) 70%);
+      top: -140px;
+      right: -100px;
       z-index: 0;
       pointer-events: none;
     }
+
     .ambient-glow-2 {
       position: fixed;
-      width: 450px;
-      height: 450px;
+      width: 480px;
+      height: 480px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
-      bottom: -100px;
-      left: -80px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+      bottom: -120px;
+      left: -100px;
       z-index: 0;
       pointer-events: none;
     }
 
-    /* Header matching Aura AI brand */
+    /* Top Brand Tag Bar (Aura Signature) */
+    .top-tag-bar {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 20px;
+      background: rgba(6, 9, 17, 0.7);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .tag-cluster {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .tag-pill {
+      color: #94a3b8;
+    }
+
+    .tag-pill.live-sync {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #34d399;
+    }
+
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: blinkDot 2s infinite ease-in-out;
+    }
+
+    @keyframes blinkDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Header matching Aura Floating Browser Chrome */
     .admin-header {
       position: relative;
       z-index: 10;
@@ -73,27 +138,29 @@
       padding: 14px 28px;
       background: rgba(15, 23, 42, 0.85);
       border-bottom: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .brand-cluster {
       display: flex;
       align-items: center;
       gap: 12px;
+      text-decoration: none;
     }
 
     .brand-logo-icon {
       width: 38px;
       height: 38px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 11px;
+      background: var(--accent-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.15rem;
       color: #ffffff;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.38);
+      flex-shrink: 0;
     }
 
     .brand-title-wrap h1 {
@@ -104,6 +171,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .badge-admin {
@@ -111,7 +179,7 @@
       color: #a5b4fc;
       border: 1px solid rgba(99, 102, 241, 0.4);
       padding: 3px 9px;
-      border-radius: 9999px;
+      border-radius: var(--radius-full);
       font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -128,43 +196,46 @@
       background: rgba(255, 255, 255, 0.07);
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: #cbd5e1;
-      padding: 7px 14px;
-      border-radius: 9999px;
-      font-size: 0.8rem;
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
       font-weight: 600;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       transition: all 0.18s ease;
+      white-space: nowrap;
     }
 
     .btn-nav-app:hover {
       background: rgba(255, 255, 255, 0.14);
       color: #ffffff;
       border-color: rgba(255, 255, 255, 0.25);
-      transform: translateX(-2px);
+      transform: translateY(-1px);
     }
 
     .btn-logout {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.35);
       color: #fca5a5;
-      padding: 7px 14px;
-      border-radius: 9999px;
-      font-size: 0.8rem;
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 7px;
       transition: all 0.18s ease;
+      white-space: nowrap;
     }
 
     .btn-logout:hover {
       background: #ef4444;
       color: #ffffff;
       border-color: #ef4444;
+      transform: translateY(-1px);
     }
 
     /* Main Container */
@@ -172,119 +243,143 @@
       position: relative;
       z-index: 1;
       flex: 1;
-      padding: 28px;
+      padding: 28px 24px;
       max-width: 1240px;
       margin: 0 auto;
       width: 100%;
     }
 
-    /* VIEW 1: Clean Dedicated Login Card */
+    /* VIEW 1: Clean Dedicated Login Card (Aura Glassmorphic Style) */
     .login-container {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: calc(80vh - 80px);
-      padding: 20px;
+      padding: 20px 12px;
     }
 
     .login-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 38px 32px;
+      border-radius: var(--radius-xl);
+      padding: 40px 36px;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5),
-                  0 0 35px var(--accent-glow);
-      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7),
+                  0 0 40px var(--accent-glow);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       text-align: center;
       position: relative;
-      animation: fadeIn 0.3s ease;
+      overflow: hidden;
+      animation: cardPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #6366f1, #a855f7, transparent);
+    }
+
+    @keyframes cardPop {
+      0% { transform: scale(0.95) translateY(10px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
     }
 
     .login-shield-badge {
-      width: 58px;
-      height: 58px;
-      border-radius: 16px;
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius-lg);
       background: rgba(99, 102, 241, 0.16);
       border: 1px solid rgba(99, 102, 241, 0.35);
       color: #818cf8;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.6rem;
-      margin: 0 auto 18px auto;
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+      font-size: 1.65rem;
+      margin: 0 auto 20px auto;
+      box-shadow: 0 0 24px rgba(99, 102, 241, 0.25);
     }
 
     .login-card h2 {
-      font-size: 1.5rem;
+      font-size: 1.55rem;
       font-weight: 800;
       color: #ffffff;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       letter-spacing: -0.02em;
     }
 
     .login-card p {
-      font-size: 0.85rem;
+      font-size: 0.86rem;
       color: var(--text-muted);
-      margin-bottom: 24px;
-      line-height: 1.45;
+      margin-bottom: 26px;
+      line-height: 1.5;
     }
 
     .form-group {
       text-align: left;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .form-group label {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       color: #cbd5e1;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .input-field {
       width: 100%;
-      padding: 12px 14px;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 10px;
+      padding: 13px 16px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: var(--radius-md);
       color: #f8fafc;
-      font-size: 0.88rem;
+      font-size: 0.92rem;
       outline: none;
-      transition: all 0.15s ease;
+      transition: all 0.18s ease;
     }
 
     .input-field:focus {
       border-color: #818cf8;
-      background: rgba(15, 23, 42, 0.95);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+      background: rgba(15, 23, 42, 0.98);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.28);
     }
 
     .btn-submit {
       width: 100%;
-      padding: 12px;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      padding: 13px;
+      background: var(--accent-gradient);
       color: #ffffff;
       border: none;
-      border-radius: 10px;
-      font-size: 0.9rem;
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-      transition: all 0.15s ease;
-      margin-top: 8px;
+      gap: 9px;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.38);
+      transition: all 0.18s ease;
+      margin-top: 10px;
     }
 
-    .btn-submit:hover {
+    .btn-submit:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(99, 102, 241, 0.45);
+      box-shadow: 0 8px 26px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
     }
 
     /* VIEW 2: Admin Dashboard */
@@ -304,70 +399,182 @@
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
       padding: 20px;
       display: flex;
       align-items: center;
       gap: 16px;
-      backdrop-filter: blur(12px);
-      transition: transform 0.18s ease;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transition: all 0.2s ease;
     }
 
     .stat-card:hover {
       transform: translateY(-2px);
-      border-color: rgba(99, 102, 241, 0.3);
+      border-color: var(--card-border-hover);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
     }
 
     .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 50px;
+      height: 50px;
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.35rem;
+      font-size: 1.4rem;
       flex-shrink: 0;
     }
 
     .stat-icon.users {
-      background: rgba(99, 102, 241, 0.15);
+      background: rgba(99, 102, 241, 0.18);
       color: #818cf8;
     }
     .stat-icon.chats {
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(16, 185, 129, 0.18);
       color: #34d399;
     }
     .stat-icon.models {
-      background: rgba(245, 158, 11, 0.15);
+      background: rgba(245, 158, 11, 0.18);
       color: #fbbf24;
     }
     .stat-icon.sync {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(59, 130, 246, 0.18);
       color: #60a5fa;
     }
 
     .stat-info h3 {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
       color: #ffffff;
       letter-spacing: -0.02em;
     }
 
     .stat-info p {
-      font-size: 0.76rem;
-      font-weight: 600;
+      font-size: 0.74rem;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    /* Supabase Cloud Live Sync Section */
+    .cloud-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .cloud-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .cloud-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cloud-title-group i {
+      font-size: 1.3rem;
+      color: #34d399;
+    }
+
+    .cloud-title-group h2 {
+      font-size: 1.12rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .cloud-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-schema-modal {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #a5b4fc;
+      padding: 7px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+
+    .btn-schema-modal:hover {
+      background: #6366f1;
+      color: #ffffff;
+      border-color: #6366f1;
+    }
+
+    .tables-status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .table-status-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .table-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .table-badge.ready {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .table-badge.missing {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
     /* Section Card */
     .section-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
+      border-radius: var(--radius-xl);
       padding: 24px;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     }
 
@@ -390,59 +597,60 @@
     }
 
     .search-box {
-      background: rgba(15, 23, 42, 0.7);
+      background: rgba(15, 23, 42, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 10px;
-      padding: 9px 14px;
-      font-size: 0.84rem;
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      font-size: 0.86rem;
       color: #ffffff;
       outline: none;
-      min-width: 260px;
-      transition: all 0.15s ease;
+      min-width: 280px;
+      transition: all 0.18s ease;
     }
 
     .search-box:focus {
       border-color: #818cf8;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
     }
 
     /* Users Table */
     .table-wrapper {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(11, 15, 25, 0.5);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.86rem;
+      font-size: 0.88rem;
     }
 
     th {
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(15, 23, 42, 0.85);
       color: #94a3b8;
       font-weight: 700;
       text-transform: uppercase;
-      font-size: 0.7rem;
-      letter-spacing: 0.05em;
-      padding: 14px 16px;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 14px 18px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       white-space: nowrap;
     }
 
     td {
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       color: #cbd5e1;
       vertical-align: middle;
       white-space: nowrap;
     }
 
     tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.03);
     }
 
     .user-cell {
@@ -452,23 +660,24 @@
     }
 
     .user-avatar-mini {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       object-fit: cover;
-      border: 1.5px solid rgba(99, 102, 241, 0.4);
+      border: 2px solid rgba(99, 102, 241, 0.4);
+      flex-shrink: 0;
     }
 
     .user-meta-name {
       font-weight: 700;
       color: #ffffff;
-      font-size: 0.88rem;
+      font-size: 0.9rem;
     }
 
     .role-badge {
       display: inline-block;
-      padding: 3px 8px;
-      border-radius: 9999px;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
       font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -481,24 +690,24 @@
     }
 
     .role-badge.user {
-      background: rgba(148, 163, 184, 0.12);
+      background: rgba(148, 163, 184, 0.14);
       color: #94a3b8;
-      border: 1px solid rgba(148, 163, 184, 0.2);
+      border: 1px solid rgba(148, 163, 184, 0.22);
     }
 
     .btn-delete-user {
       background: rgba(239, 68, 68, 0.15);
       border: 1px solid rgba(239, 68, 68, 0.35);
       color: #fca5a5;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.78rem;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.15s ease;
+      transition: all 0.18s ease;
     }
 
     .btn-delete-user:hover:not(:disabled) {
@@ -515,19 +724,107 @@
       cursor: not-allowed;
     }
 
+    /* Modal for SQL Schema */
+    .schema-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 9, 17, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .schema-modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    .schema-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .schema-modal-header h3 {
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-close-modal {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .schema-code-box {
+      background: #060911;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      color: #a5b4fc;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      overflow-y: auto;
+      flex: 1;
+      max-height: 380px;
+      white-space: pre-wrap;
+      user-select: all;
+    }
+
+    .schema-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn-copy-sql {
+      background: var(--accent-gradient);
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
     /* Toast Notification */
     .toast {
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: #0f172a;
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.16);
       color: #ffffff;
       padding: 12px 20px;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       font-weight: 600;
-      font-size: 0.86rem;
-      z-index: 9999;
+      font-size: 0.88rem;
+      z-index: 99999;
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
       display: flex;
       align-items: center;
@@ -545,42 +842,116 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Mobile Responsive */
+    /* ==========================================================
+       MOBILE RESPONSIVENESS (Dimensions, Padding, Touch Targets)
+       ========================================================== */
     @media (max-width: 768px) {
+      .top-tag-bar {
+        padding: 5px 14px;
+        font-size: 0.62rem;
+      }
+      .tag-cluster span:not(.live-sync) {
+        display: none;
+      }
       .admin-header {
         padding: 12px 16px;
+      }
+      .brand-title-wrap h1 {
+        font-size: 0.95rem;
+      }
+      .badge-admin {
+        font-size: 0.62rem;
+        padding: 2px 7px;
+      }
+      .btn-nav-app span, .btn-logout span {
+        display: none;
+      }
+      .btn-nav-app, .btn-logout {
+        padding: 8px 12px;
       }
       .main-wrap {
         padding: 16px 12px;
       }
+      .login-card {
+        padding: 28px 20px;
+        border-radius: var(--radius-lg);
+      }
+      .login-card h2 {
+        font-size: 1.35rem;
+      }
+      .input-field {
+        font-size: 16px; /* Prevents mobile Safari auto-zoom */
+        padding: 12px 14px;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .cloud-card {
+        padding: 18px 16px;
+      }
+      .section-card {
+        padding: 18px 14px;
+        border-radius: var(--radius-lg);
+      }
       .section-top {
         flex-direction: column;
         align-items: stretch;
+        gap: 12px;
       }
       .search-box {
         width: 100%;
         min-width: unset;
+        font-size: 16px;
       }
-      .stats-grid {
+      th, td {
+        padding: 12px 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .tables-status-grid {
         grid-template-columns: 1fr;
+      }
+      .btn-schema-modal {
+        width: 100%;
+        justify-content: center;
+      }
+      .cloud-card-top {
+        flex-direction: column;
+        align-items: stretch;
       }
     }
   </style>
 </head>
 <body>
-  <div class="ambient-glow"></div>
+  <div class="ambient-glow-1"></div>
   <div class="ambient-glow-2"></div>
+
+  <!-- Top Signature Tag Bar -->
+  <div class="top-tag-bar">
+    <div class="tag-cluster">
+      <span class="tag-pill">AURA AI PLATFORM</span>
+      <span class="tag-pill">MANAGEMENT CONSOLE</span>
+    </div>
+    <div class="tag-cluster">
+      <span class="tag-pill live-sync" id="tag-sync-status">
+        <span class="tag-dot"></span>
+        <span id="sync-status-label">SUPABASE CLOUD READY</span>
+      </span>
+    </div>
+  </div>
 
   <!-- Header -->
   <header class="admin-header">
-    <div class="brand-cluster">
+    <a href="/" class="brand-cluster" title="Aura AI Home">
       <div class="brand-logo-icon">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
       </div>
       <div class="brand-title-wrap">
         <h1>Aura AI <span class="badge-admin">Super Admin</span></h1>
       </div>
-    </div>
+    </a>
     <div class="header-actions">
       <a href="/" class="btn-nav-app">
         <i class="fa-solid fa-arrow-left"></i> <span>Main App</span>
@@ -592,14 +963,14 @@
   </header>
 
   <div class="main-wrap">
-    <!-- VIEW 1: Clean Admin Login View (No auto-fill, no auto-fetch) -->
+    <!-- VIEW 1: Clean Dedicated Admin Login View (No auto-fill, manual entry) -->
     <div class="login-container" id="admin-login-view">
       <div class="login-card">
         <div class="login-shield-badge">
           <i class="fa-solid fa-shield-halved"></i>
         </div>
         <h2>Super Admin Access</h2>
-        <p>Enter your master administrator credentials to unlock the management console.</p>
+        <p>Enter your master administrator credentials to unlock the control center & database console.</p>
 
         <form id="admin-login-form" autocomplete="off">
           <div class="form-group">
@@ -617,15 +988,16 @@
       </div>
     </div>
 
-    <!-- VIEW 2: Admin Dashboard View (Only displayed after manual sign-in) -->
+    <!-- VIEW 2: Admin Dashboard View (Only displayed after authorized login) -->
     <div class="dashboard-view" id="admin-dashboard-view">
+      
       <!-- Metric Cards -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon users"><i class="fa-solid fa-users"></i></div>
           <div class="stat-info">
             <h3 id="stat-total-users">0</h3>
-            <p>Registered Accounts</p>
+            <p>Registered Users</p>
           </div>
         </div>
 
@@ -633,7 +1005,7 @@
           <div class="stat-icon chats"><i class="fa-solid fa-comments"></i></div>
           <div class="stat-info">
             <h3 id="stat-total-sessions">0</h3>
-            <p>Total Chat Sessions</p>
+            <p>Chat Sessions & Msgs</p>
           </div>
         </div>
 
@@ -649,7 +1021,47 @@
           <div class="stat-icon sync"><i class="fa-solid fa-cloud"></i></div>
           <div class="stat-info">
             <h3 id="stat-supabase-status">Supabase Cloud</h3>
-            <p>Database & Cloud Status</p>
+            <p>Cloud Storage Sync</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supabase Cloud Live Health Card -->
+      <div class="cloud-card" id="cloud-sync-card">
+        <div class="cloud-card-top">
+          <div class="cloud-title-group">
+            <i class="fa-solid fa-database"></i>
+            <div>
+              <h2>Supabase Cloud Backend Database</h2>
+              <p style="font-size: 0.78rem; color: #94a3b8;" id="cloud-url-display">Checking connection...</p>
+            </div>
+          </div>
+          <div class="cloud-actions">
+            <button type="button" class="btn-schema-modal" id="btn-open-schema-modal">
+              <i class="fa-solid fa-code"></i> View SQL Schema
+            </button>
+            <a href="https://supabase.com/dashboard/project/srrpewuenwnusmxmazho/sql" target="_blank" rel="noopener" class="btn-schema-modal" style="text-decoration: none;">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Supabase SQL Editor
+            </a>
+          </div>
+        </div>
+
+        <div class="tables-status-grid" id="tables-status-grid">
+          <div class="table-status-item">
+            <span class="table-name">public.profiles</span>
+            <span class="table-badge missing" id="badge-table-profiles">Checking...</span>
+          </div>
+          <div class="table-status-item">
+            <span class="table-name">public.chat_sessions</span>
+            <span class="table-badge missing" id="badge-table-sessions">Checking...</span>
+          </div>
+          <div class="table-status-item">
+            <span class="table-name">public.chat_messages</span>
+            <span class="table-badge missing" id="badge-table-messages">Checking...</span>
+          </div>
+          <div class="table-status-item">
+            <span class="table-name">public.user_notes</span>
+            <span class="table-badge missing" id="badge-table-notes">Checking...</span>
           </div>
         </div>
       </div>
@@ -662,7 +1074,7 @@
             <span>All User Accounts</span>
             <span class="badge-admin" id="users-count-badge">0 Users</span>
           </div>
-          <input type="text" id="user-search-input" class="search-box" placeholder="Search by name or email..." />
+          <input type="text" id="user-search-input" class="search-box" placeholder="Search by name, email, or role..." />
         </div>
 
         <div class="table-wrapper">
@@ -684,12 +1096,34 @@
           </table>
         </div>
       </div>
+
+    </div>
+  </div>
+
+  <!-- SQL Schema Viewer Modal -->
+  <div class="schema-modal-overlay" id="schema-modal">
+    <div class="schema-modal-card">
+      <div class="schema-modal-header">
+        <h3><i class="fa-solid fa-database" style="color: #818cf8;"></i> Supabase SQL Schema Migration</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-schema-modal">&times;</button>
+      </div>
+      <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">
+        To create or update the tables in your Supabase Cloud project, copy this SQL script and execute it in your Supabase SQL Editor.
+      </p>
+      <div class="schema-code-box" id="schema-code-content">-- Loading SQL Schema...</div>
+      <div class="schema-footer">
+        <button type="button" class="btn-nav-app" id="btn-close-schema-btn">Close</button>
+        <button type="button" class="btn-copy-sql" id="btn-copy-sql">
+          <i class="fa-solid fa-copy"></i> Copy SQL to Clipboard
+        </button>
+      </div>
     </div>
   </div>
 
   <script>
     let adminToken = null;
     let cachedUsers = [];
+    let cachedSchemaSql = "";
 
     document.addEventListener("DOMContentLoaded", () => {
       // Strictly start at login view. Do not auto-fetch credentials or data.
@@ -698,6 +1132,12 @@
       document.getElementById("admin-login-form").addEventListener("submit", handleAdminLogin);
       document.getElementById("btn-admin-logout").addEventListener("click", handleAdminLogout);
       document.getElementById("user-search-input").addEventListener("input", filterUsersTable);
+
+      // Schema Modal triggers
+      document.getElementById("btn-open-schema-modal").addEventListener("click", openSchemaModal);
+      document.getElementById("btn-close-schema-modal").addEventListener("click", closeSchemaModal);
+      document.getElementById("btn-close-schema-btn").addEventListener("click", closeSchemaModal);
+      document.getElementById("btn-copy-sql").addEventListener("click", copySqlToClipboard);
     });
 
     function showToast(msg) {
@@ -712,7 +1152,6 @@
       document.getElementById("admin-login-view").style.display = "flex";
       document.getElementById("admin-dashboard-view").style.display = "none";
       document.getElementById("btn-admin-logout").style.display = "none";
-      // Clear inputs
       const emailInput = document.getElementById("admin-email");
       const passInput = document.getElementById("admin-password");
       if (emailInput) emailInput.value = "";
@@ -724,6 +1163,7 @@
       document.getElementById("admin-dashboard-view").style.display = "block";
       document.getElementById("btn-admin-logout").style.display = "inline-flex";
       loadAdminUsers();
+      loadSupabaseStatus();
     }
 
     async function handleAdminLogin(e) {
@@ -779,12 +1219,54 @@
       }
     }
 
+    async function loadSupabaseStatus() {
+      try {
+        const res = await fetch(`/api/admin/supabase-status?admin_token=${adminToken || ""}`);
+        const data = await res.json();
+        if (res.ok && data.success) {
+          cachedSchemaSql = data.schema_sql || "";
+          document.getElementById("schema-code-content").textContent = cachedSchemaSql;
+
+          const sup = data.supabase || {};
+          const urlEl = document.getElementById("cloud-url-display");
+          if (urlEl) {
+            urlEl.textContent = sup.url ? `Project: ${sup.url}` : "Not Configured in .env";
+          }
+
+          const tables = sup.tables || {};
+          updateTableBadge("badge-table-profiles", tables.profiles);
+          updateTableBadge("badge-table-sessions", tables.chat_sessions);
+          updateTableBadge("badge-table-messages", tables.chat_messages);
+          updateTableBadge("badge-table-notes", tables.user_notes);
+
+          const syncTag = document.getElementById("sync-status-label");
+          if (syncTag) {
+            syncTag.textContent = sup.all_ready ? "SUPABASE CLOUD READY" : "SUPABASE TABLES PENDING";
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check Supabase status:", err);
+      }
+    }
+
+    function updateTableBadge(elId, status) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      if (status === "ready") {
+        el.textContent = "Ready";
+        el.className = "table-badge ready";
+      } else {
+        el.textContent = "Run SQL";
+        el.className = "table-badge missing";
+      }
+    }
+
     function renderStats(stats) {
       if (!stats) return;
       document.getElementById("stat-total-users").textContent = stats.total_users || 0;
       document.getElementById("stat-total-sessions").textContent = `${stats.total_sessions || 0} chats (${stats.total_messages || 0} msgs)`;
       document.getElementById("stat-active-model").textContent = (stats.active_provider || "groq").toUpperCase();
-      document.getElementById("stat-supabase-status").textContent = stats.supabase_configured ? "Supabase Cloud" : "Local SQLite";
+      document.getElementById("stat-supabase-status").textContent = stats.supabase_configured ? "Supabase Active" : "Local Mode";
       document.getElementById("users-count-badge").textContent = `${stats.total_users || 0} Users`;
     }
 
@@ -793,7 +1275,7 @@
       tbody.innerHTML = "";
 
       if (users.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:24px;">No users found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:24px;">No users registered yet.</td></tr>`;
         return;
       }
 
@@ -805,23 +1287,23 @@
         const avatar = u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80";
 
         tr.innerHTML = `
-          <td style="color:#64748b; font-weight:600;">#${u.id}</td>
+          <td style="color:#64748b; font-weight:600; font-family:'Fira Code', monospace;">#${u.id}</td>
           <td>
             <div class="user-cell">
               <img src="${avatar}" class="user-avatar-mini" onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80';" />
               <div>
                 <div class="user-meta-name">${escapeHtml(u.name)}</div>
-                <div style="font-size:0.72rem; color:#64748b;">${escapeHtml(u.gender || 'male')}</div>
+                <div style="font-size:0.72rem; color:#64748b; text-transform: capitalize;">${escapeHtml(u.gender || 'male')}</div>
               </div>
             </div>
           </td>
-          <td><code>${escapeHtml(u.email)}</code></td>
+          <td><code style="font-family:'Fira Code', monospace; font-size:0.82rem; color:#a5b4fc;">${escapeHtml(u.email)}</code></td>
           <td><span class="role-badge ${roleClass}">${escapeHtml(u.role || 'user')}</span></td>
           <td><strong>${u.session_count || 0}</strong></td>
-          <td style="color:#94a3b8;">${dateStr}</td>
+          <td style="color:#94a3b8; font-size:0.82rem;">${dateStr}</td>
           <td>
             ${isSuperAdmin 
-              ? `<button class="btn-delete-user" disabled title="Super Administrator account cannot be deleted"><i class="fa-solid fa-shield"></i> Protected</button>`
+              ? `<button class="btn-delete-user" disabled title="Super Administrator account cannot be deleted"><i class="fa-solid fa-shield"></i> Master</button>`
               : `<button class="btn-delete-user" onclick="confirmDeleteUser(${u.id}, '${escapeHtml(u.name)}', '${escapeHtml(u.email)}')"><i class="fa-solid fa-trash-can"></i> Delete</button>`
             }
           </td>
@@ -845,7 +1327,7 @@
     }
 
     async function confirmDeleteUser(userId, name, email) {
-      const ok = confirm(`⚠️ Are you sure you want to permanently delete user:\n\n${name} (${email})?\n\nThis will remove their profile, chats, and saved history.`);
+      const ok = confirm(`⚠️ Permanently delete user:\n\n${name} (${email})?\n\nThis will remove their profile, chats, and saved history from both local and Supabase cloud.`);
       if (!ok) return;
 
       try {
@@ -862,6 +1344,23 @@
       } catch (err) {
         alert(`Network error deleting user: ${err.message}`);
       }
+    }
+
+    function openSchemaModal() {
+      document.getElementById("schema-modal").style.display = "flex";
+    }
+
+    function closeSchemaModal() {
+      document.getElementById("schema-modal").style.display = "none";
+    }
+
+    function copySqlToClipboard() {
+      if (!cachedSchemaSql) return;
+      navigator.clipboard.writeText(cachedSchemaSql).then(() => {
+        showToast("📋 SQL Schema copied to clipboard! Paste in Supabase SQL editor.");
+      }).catch(() => {
+        alert("Please copy manually from the box.");
+      });
     }
 
     function escapeHtml(str) {

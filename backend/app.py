@@ -154,13 +154,37 @@ def list_sessions(user_id: Optional[int] = None):
     return get_all_sessions(user_id=user_id)
 
 @app.post("/api/sessions")
-def new_session(req: CreateSessionRequest):
+async def new_session(req: CreateSessionRequest):
     sid = str(uuid.uuid4())[:8]
-    return create_session(sid, title=req.title or "New Chat", user_id=req.user_id)
+    sess = create_session(sid, title=req.title or "New Chat", user_id=req.user_id)
+    if supabase_auth.is_configured():
+        user_email = None
+        if req.user_id:
+            conn = get_connection()
+            u = conn.execute("SELECT email FROM users WHERE id = ?", (req.user_id,)).fetchone()
+            conn.close()
+            if u:
+                user_email = u["email"]
+        if not user_email:
+            user_email = get_active_user().get("email")
+        import asyncio
+        asyncio.create_task(supabase_auth.sync_session_to_db(sid, req.title or "New Chat", user_email=user_email))
+    return sess
 
 @app.delete("/api/sessions/{session_id}")
-def remove_session(session_id: str):
+async def remove_session(session_id: str):
     delete_session(session_id)
+    if supabase_auth.is_configured():
+        try:
+            import httpx
+            headers = {
+                "apikey": supabase_auth.anon_key,
+                "Authorization": f"Bearer {supabase_auth.anon_key}"
+            }
+            async with httpx.AsyncClient(timeout=5) as client:
+                await client.delete(f"{supabase_auth.url}/rest/v1/chat_sessions?id=eq.{session_id}", headers=headers)
+        except Exception:
+            pass
     return {"status": "deleted", "session_id": session_id}
 
 @app.get("/api/sessions/{session_id}/messages")
@@ -739,7 +763,7 @@ def api_admin_login(req: AdminLoginRequest):
     raise HTTPException(status_code=401, detail="Invalid admin credentials")
 
 @app.get("/api/admin/users")
-def api_admin_get_users(admin_token: Optional[str] = None):
+async def api_admin_get_users(admin_token: Optional[str] = None):
     users = get_all_users_for_admin()
     conn = get_connection()
     total_sessions = conn.execute("SELECT COUNT(*) as count FROM sessions").fetchone()["count"]
@@ -748,6 +772,8 @@ def api_admin_get_users(admin_token: Optional[str] = None):
     conn.close()
 
     active_settings = get_settings()
+    cloud_status = await supabase_auth.check_cloud_tables_status() if supabase_auth.is_configured() else {"configured": False}
+
     return {
         "success": True,
         "users": users,
@@ -759,15 +785,41 @@ def api_admin_get_users(admin_token: Optional[str] = None):
             "active_provider": active_settings.get("active_provider", "groq"),
             "active_model": active_settings.get("groq_model", "groq/compound-mini"),
             "supabase_configured": supabase_auth.is_configured(),
-            "supabase_url": config.SUPABASE_URL or "Not Configured"
+            "supabase_url": config.SUPABASE_URL or "Not Configured",
+            "cloud_status": cloud_status
         }
     }
 
+@app.get("/api/admin/supabase-status")
+async def api_admin_supabase_status(admin_token: Optional[str] = None):
+    """Returns comprehensive health check of Supabase Cloud integration and schema"""
+    status = await supabase_auth.check_cloud_tables_status()
+    schema_path = BASE_DIR / "backend" / "supabase_schema.sql"
+    schema_sql = ""
+    if schema_path.exists():
+        schema_sql = schema_path.read_text(encoding="utf-8")
+    return {
+        "success": True,
+        "supabase": status,
+        "schema_sql": schema_sql,
+        "project_url": config.SUPABASE_URL or ""
+    }
+
 @app.delete("/api/admin/users/{user_id}")
-def api_admin_delete_user(user_id: int, admin_token: Optional[str] = None):
+async def api_admin_delete_user(user_id: int, admin_token: Optional[str] = None):
     res = delete_user_by_admin(user_id)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("error", "Failed to delete user"))
+    
+    # Also delete user records from Supabase Cloud if configured
+    email = res.get("email")
+    if email and supabase_auth.is_configured():
+        try:
+            supa_del = await supabase_auth.delete_user_from_cloud(email)
+            res["supabase_sync"] = supa_del
+        except Exception as e:
+            res["supabase_sync"] = {"success": False, "error": str(e)}
+            
     return res
 
 @app.get("/admin")

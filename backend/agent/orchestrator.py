@@ -8,6 +8,7 @@ from backend.llm.client import llm_client
 from backend.llm.prompts import SYSTEM_PERSONA_PROMPT
 
 from backend.database import get_active_user
+from backend.auth.supabase_client import supabase_auth
 
 class AgentOrchestrator:
     """Coordinates Conversation Context, Long-Term Memory, RAG, Tool Execution, and LLMs."""
@@ -21,6 +22,19 @@ class AgentOrchestrator:
     ) -> Dict[str, Any]:
         # 1. Save user message to short-term history
         conversation_manager.append_message(session_id, "user", user_message)
+
+        # Retrieve active user profile early for context & cloud sync
+        active_user = get_active_user()
+        user_name = active_user.get("name", "User")
+        user_email = active_user.get("email", "")
+        user_role = active_user.get("role", "Personal AI User")
+        user_bio = active_user.get("bio", "")
+        user_gender = active_user.get("gender", "male")
+
+        # Asynchronously sync user message to Supabase Cloud
+        asyncio.create_task(
+            self._sync_cloud_message(session_id, "user", user_message, user_email)
+        )
 
         # 2. Retrieve conversation history
         history = conversation_manager.get_context(session_id)
@@ -112,6 +126,11 @@ class AgentOrchestrator:
             citations=citations
         )
 
+        # Asynchronously sync assistant response to Supabase Cloud
+        asyncio.create_task(
+            self._sync_cloud_message(session_id, "assistant", assistant_text, user_email)
+        )
+
         # 8. Background task: extract long-term facts asynchronously
         asyncio.create_task(
             self._extract_memory_bg(user_message, assistant_text, provider, model)
@@ -122,6 +141,13 @@ class AgentOrchestrator:
             "tool_calls": tool_calls,
             "citations": citations
         }
+
+    async def _sync_cloud_message(self, session_id: str, role: str, content: str, user_email: Optional[str] = None):
+        """Asynchronously and safely sync chat message to Supabase Cloud."""
+        try:
+            await supabase_auth.sync_chat_message_to_db(session_id, role, content, user_email=user_email)
+        except Exception:
+            pass
 
     async def _extract_memory_bg(self, user_msg: str, assistant_reply: str, provider: str, model: str):
         """Asynchronously analyze user statement to store enduring facts."""
