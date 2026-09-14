@@ -50,8 +50,16 @@ ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_notes ENABLE ROW LEVEL SECURITY;
 
--- Allow read/write access via Supabase Anon/Publishable Key
+-- Allow read/write access via Supabase Anon/Publishable Key (Idempotent)
+DROP POLICY IF EXISTS "Allow all access to profiles" ON public.profiles;
 CREATE POLICY "Allow all access to profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all access to chat_sessions" ON public.chat_sessions;
 CREATE POLICY "Allow all access to chat_sessions" ON public.chat_sessions FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all access to chat_messages" ON public.chat_messages;
 CREATE POLICY "Allow all access to chat_messages" ON public.chat_messages FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all access to user_notes" ON public.user_notes;
 CREATE POLICY "Allow all access to user_notes" ON public.user_notes FOR ALL USING (true) WITH CHECK (true);
+
