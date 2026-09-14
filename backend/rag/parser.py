@@ -83,4 +83,59 @@ class DocumentParser:
                 "filename": path.name
             }]
 
+    @staticmethod
+    def _parse_image(path: Path) -> List[Dict[str, Any]]:
+        try:
+            from PIL import Image
+            img = Image.open(str(path))
+            w, h = img.size
+            fmt = (img.format or path.suffix.upper().lstrip(".")).upper()
+            mode = img.mode
+
+            extracted_text = ""
+
+            # 1. Try pytesseract if installed
+            try:
+                import pytesseract
+                extracted_text = pytesseract.image_to_string(img).strip()
+            except Exception:
+                pass
+
+            # 2. Try Google Gemini Vision OCR if api key available
+            if not extracted_text:
+                try:
+                    from backend.database import get_setting
+                    gemini_key = get_setting("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+                    if gemini_key:
+                        import google.generativeai as genai
+                        genai.configure(api_key=gemini_key)
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        prompt = "Extract and transcribe all text, numbers, headings, tables, labels, and relevant content from this image clearly and completely."
+                        response = model.generate_content([prompt, img])
+                        if response and response.text:
+                            extracted_text = response.text.strip()
+                except Exception:
+                    pass
+
+            doc_text_parts = [
+                f"Document Image: {path.name}",
+                f"File Format: {fmt} | Dimensions: {w} x {h} pixels | Color Mode: {mode}"
+            ]
+            if extracted_text:
+                doc_text_parts.append(f"\nExtracted Text & Document Content:\n{extracted_text}")
+            else:
+                doc_text_parts.append(f"Image document '{path.name}' indexed in Knowledge Base for reference and visual analysis.")
+
+            return [{
+                "text": "\n".join(doc_text_parts),
+                "page": 1,
+                "filename": path.name
+            }]
+        except Exception as e:
+            return [{
+                "text": f"Error indexing image {path.name}: {e}",
+                "page": 1,
+                "filename": path.name
+            }]
+
 document_parser = DocumentParser()

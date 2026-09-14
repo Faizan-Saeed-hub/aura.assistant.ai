@@ -14,7 +14,7 @@ from backend.config import Config, config, UPLOADS_DIR, AVATARS_DIR, BASE_DIR
 from backend.database import (
     init_db, create_session, get_all_sessions, get_session, delete_session,
     get_session_messages, get_setting, set_setting, get_connection,
-    get_active_user, create_user_account, update_user_profile,
+    get_active_user, create_user_account, update_user_profile, authenticate_user,
     DEFAULT_MALE_AVATAR, DEFAULT_FEMALE_AVATAR
 )
 from backend.memory.long_term import long_term_memory
@@ -45,13 +45,15 @@ FRONTEND_DIR = BASE_DIR / "frontend"
 
 # Request Schemas
 class ChatRequest(BaseModel):
-    session_id: str
+    session_id: Optional[str] = None
     message: str
     provider: Optional[str] = None
     model: Optional[str] = None
+    user_id: Optional[int] = None
 
 class CreateSessionRequest(BaseModel):
     title: Optional[str] = "New Chat"
+    user_id: Optional[int] = None
 
 class MemoryCreateRequest(BaseModel):
     category: str
@@ -109,16 +111,31 @@ async def chat_endpoint(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     
+    # Model Access Control: Guests can ONLY use default Groq; Gemini & OpenRouter require login
+    active_settings = get_settings()
+    target_provider = (req.provider or active_settings.get("active_provider") or "groq").lower()
+    is_authenticated = bool(req.user_id and req.user_id > 0)
+
+    if not is_authenticated and target_provider in ["gemini", "openrouter", "ollama"]:
+        return {
+            "text": "🔒 **Account Required to Unlock Google Gemini & OpenRouter**\n\nYou are currently chatting in Free Guest Mode with **Groq**. To unlock Gemini 2.5 Flash, OpenRouter, and persistent cross-device chat history, please **sign in or create a free account** in the top right!",
+            "auth_required": True,
+            "tool_calls": [],
+            "citations": []
+        }
+
     # Verify session or create if missing
-    sess = get_session(req.session_id)
+    import time
+    session_id = req.session_id or f"sess_{int(time.time()*1000)}"
+    sess = get_session(session_id)
     if not sess:
-        create_session(req.session_id, title=req.message[:30] + ("..." if len(req.message) > 30 else ""))
+        create_session(session_id, title=req.message[:30] + ("..." if len(req.message) > 30 else ""), user_id=req.user_id)
     
     try:
         result = await agent_orchestrator.process_message(
-            session_id=req.session_id,
+            session_id=session_id,
             user_message=req.message,
-            provider=req.provider,
+            provider=target_provider,
             model=req.model
         )
         return result
@@ -132,13 +149,13 @@ async def chat_endpoint(req: ChatRequest):
         }
 
 @app.get("/api/sessions")
-def list_sessions():
-    return get_all_sessions()
+def list_sessions(user_id: Optional[int] = None):
+    return get_all_sessions(user_id=user_id)
 
 @app.post("/api/sessions")
 def new_session(req: CreateSessionRequest):
     sid = str(uuid.uuid4())[:8]
-    return create_session(sid, title=req.title or "New Chat")
+    return create_session(sid, title=req.title or "New Chat", user_id=req.user_id)
 
 @app.delete("/api/sessions/{session_id}")
 def remove_session(session_id: str):
@@ -511,40 +528,7 @@ def update_settings(req: SettingsUpdateRequest):
 
     return {"status": "success", "message": "Settings updated successfully"}
 
-# --- Supabase & User Authentication Endpoints ---
 
-@app.post("/api/auth/signup")
-async def auth_signup_endpoint(req: AuthSignupRequest):
-    """Register a new user account via Supabase Auth or local deployment engine."""
-    return await supabase_auth.signup(
-        email=req.email,
-        password=req.password,
-        name=req.name,
-        role=req.role or "Creator",
-        gender=req.gender or "male",
-        avatar_url=req.avatar_url
-    )
-
-@app.post("/api/auth/login")
-async def auth_login_endpoint(req: AuthLoginRequest):
-    """Sign in an existing user via Supabase Auth."""
-    return await supabase_auth.login(
-        email=req.email,
-        password=req.password
-    )
-
-@app.get("/api/auth/status")
-def auth_status_endpoint():
-    """Check user login state, Supabase Cloud configuration, and active guest engine."""
-    active_user = get_active_user()
-    return {
-        "logged_in": True,
-        "user": active_user,
-        "supabase_configured": supabase_auth.is_configured(),
-        "supabase_url": config.SUPABASE_URL,
-        "default_guest_provider": "groq",
-        "default_guest_model": config.DEFAULT_GROQ_MODEL
-    }
 
 # --- User Profile & Authentication Endpoints ---
 
@@ -603,6 +587,59 @@ def register_user(req: UserRegisterRequest):
         avatar_url=req.avatar_url
     )
     return {"status": "success", "user": user}
+
+@app.post("/api/auth/signup")
+async def auth_signup(req: AuthSignupRequest):
+    if not req.name.strip() or not req.email.strip() or not req.password:
+        raise HTTPException(status_code=400, detail="Name, email, and password are required")
+    res = await supabase_auth.signup(
+        email=req.email.strip().lower(),
+        password=req.password,
+        name=req.name.strip(),
+        role=req.role or "Creator",
+        gender=req.gender or "male",
+        avatar_url=req.avatar_url
+    )
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Signup failed"))
+    return res
+
+@app.post("/api/auth/login")
+async def auth_login(req: AuthLoginRequest):
+    if not req.email.strip() or not req.password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+    res = await supabase_auth.login(email=req.email.strip().lower(), password=req.password)
+    if not res.get("success"):
+        local_user = authenticate_user(req.email.strip().lower(), req.password)
+        if local_user:
+            return {"success": True, "mode": "local", "user": local_user}
+        raise HTTPException(status_code=401, detail=res.get("error", "Invalid email or password"))
+    return res
+
+@app.post("/api/auth/logout")
+def auth_logout():
+    set_setting("ACTIVE_USER_ID", "")
+    return {"success": True, "message": "Logged out successfully"}
+
+@app.get("/api/auth/status")
+def auth_status(user_id: Optional[int] = None):
+    active_user = None
+    if user_id:
+        conn = get_connection()
+        row = conn.execute("SELECT id, name, email, gender, role, avatar_url, bio, created_at FROM users WHERE id = ?", (user_id,)).fetchone()
+        conn.close()
+        if row:
+            active_user = dict(row)
+    if not active_user:
+        active_user = get_active_user()
+    
+    is_authenticated = bool(active_user and active_user.get("email") not in ["guest@workspace.ai", ""])
+    return {
+        "authenticated": is_authenticated,
+        "user": active_user if is_authenticated else None,
+        "allowed_providers": ["groq", "gemini", "openrouter"] if is_authenticated else ["groq"],
+        "default_provider": "gemini" if is_authenticated else "groq"
+    }
 
 @app.put("/api/user/profile")
 def update_profile(req: UserProfileUpdateRequest):

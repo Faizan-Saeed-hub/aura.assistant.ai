@@ -4,6 +4,7 @@ const DEFAULT_MALE_AVATAR = "https://images.unsplash.com/photo-1535713875002-d1d
 const DEFAULT_FEMALE_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80";
 
 let currentSessionId = null;
+let currentUser = null;
 let voiceOutputEnabled = localStorage.getItem("aura_voice_tts") === "true"; // Defaults to false
 let isRecording = false;
 let speechRecognizer = null;
@@ -11,13 +12,13 @@ let activeView = "dashboard"; // "dashboard" | "chat"
 let activeChatAttachedImage = null;
 let activeChatRetouchPreset = "glow";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   initVoiceRecognition();
   initVoiceToggleUI();
   bindEvents();
+  await checkAuthStatus();
   loadSessions();
   loadSettings();
-  loadUserProfile();
   loadDashboardData();
   initAutoResizeTextarea();
 });
@@ -165,18 +166,44 @@ function bindEvents() {
   if (btnImageBack) btnImageBack.addEventListener("click", () => switchView("dashboard"));
   setupModal("open-settings-promo-btn", "settings-modal", loadSettings);
 
-  // Profile Modal & Account Creation
-  setupModal("quick-profile-btn", "profile-modal", () => { loadUserProfile(); switchProfileTab("profile"); });
-  setupModal("open-profile-avatar-group", "profile-modal", () => { loadUserProfile(); switchProfileTab("profile"); });
-  setupModal("sidebar-create-acc-btn", "profile-modal", () => { loadUserProfile(); switchProfileTab("register"); });
+  // Profile Modal & Account Creation / Login
+  setupModal("quick-profile-btn", "profile-modal", () => {
+    if (currentUser) {
+      loadUserProfile();
+      switchProfileTab("profile");
+    } else {
+      switchProfileTab("login");
+    }
+  });
+  setupModal("open-profile-avatar-group", "profile-modal", () => {
+    if (currentUser) {
+      loadUserProfile();
+      switchProfileTab("profile");
+    } else {
+      switchProfileTab("login");
+    }
+  });
+  setupModal("sidebar-create-acc-btn", "profile-modal", () => {
+    if (currentUser) {
+      loadUserProfile();
+      switchProfileTab("profile");
+    } else {
+      switchProfileTab("register");
+    }
+  });
 
-  // Tab switching in Profile Modal
+  // Tab switching in Profile / Auth Modal
+  const tabLoginBtn = document.getElementById("tab-login-btn");
   const tabProfileBtn = document.getElementById("tab-profile-view-btn");
   const tabRegBtn = document.getElementById("tab-register-btn");
-  if (tabProfileBtn && tabRegBtn) {
-    tabProfileBtn.addEventListener("click", () => switchProfileTab("profile"));
-    tabRegBtn.addEventListener("click", () => switchProfileTab("register"));
-  }
+  const gotoRegBtn = document.getElementById("btn-goto-register");
+  const gotoLoginBtn = document.getElementById("btn-goto-login");
+
+  if (tabLoginBtn) tabLoginBtn.addEventListener("click", () => switchProfileTab("login"));
+  if (tabProfileBtn) tabProfileBtn.addEventListener("click", () => switchProfileTab("profile"));
+  if (tabRegBtn) tabRegBtn.addEventListener("click", () => switchProfileTab("register"));
+  if (gotoRegBtn) gotoRegBtn.addEventListener("click", () => switchProfileTab("register"));
+  if (gotoLoginBtn) gotoLoginBtn.addEventListener("click", () => switchProfileTab("login"));
 
   // --- Gender & Avatar Uploads: Profile Edit ---
   const editGenderRadios = document.querySelectorAll('input[name="profile-gender"]');
@@ -291,7 +318,47 @@ function bindEvents() {
     });
   }
 
-  // Account Registration Form Submit
+  // Sign In Form Submit
+  const loginForm = document.getElementById("login-account-form");
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email-input").value.trim();
+      const password = document.getElementById("login-password-input").value;
+
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+          currentUser = data.user;
+          localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+          applyUserProfileToUI(currentUser);
+          closeModal("profile-modal");
+          loadSessions();
+          loadDashboardData();
+          showToast(`✨ Welcome back, ${currentUser.name}! Gemini & OpenRouter unlocked.`);
+          // If Gemini was waiting to be used, activate it in settings
+          try {
+            await fetch("/api/settings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ active_provider: "gemini" })
+            });
+            loadSettings();
+          } catch (e) {}
+        } else {
+          showToast(`⚠️ Sign In failed: ${data.error || data.detail || "Invalid credentials"}`);
+        }
+      } catch (err) {
+        showToast("⚠️ Network error signing in.");
+      }
+    });
+  }
+
   // Account Registration Form Submit (Supabase / Local Cloud-Ready Auth)
   const regForm = document.getElementById("register-account-form");
   if (regForm) {
@@ -314,16 +381,55 @@ function bindEvents() {
         });
         const data = await res.json();
         if (res.ok && data.success) {
-          if (data.user) applyUserProfileToUI(data.user);
+          if (data.user) {
+            currentUser = data.user;
+            localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+            applyUserProfileToUI(currentUser);
+          }
           closeModal("profile-modal");
+          loadSessions();
+          loadDashboardData();
           const modeMsg = data.mode === "supabase_cloud" ? "Synced with Supabase Cloud!" : "Account created & ready!";
-          showToast(`🎉 Welcome, ${data.user ? data.user.name : name}! ${modeMsg}`);
+          showToast(`🎉 Welcome, ${currentUser ? currentUser.name : name}! ${modeMsg}`);
+          try {
+            await fetch("/api/settings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ active_provider: "gemini" })
+            });
+            loadSettings();
+          } catch (e) {}
         } else {
           showToast(`⚠️ Registration failed: ${data.error || data.detail || "Server error"}`);
         }
       } catch (err) {
         showToast("⚠️ Network error registering account.");
       }
+    });
+  }
+
+  // Sign Out Handler
+  const signOutBtn = document.getElementById("btn-user-signout");
+  if (signOutBtn) {
+    signOutBtn.addEventListener("click", async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch (e) {}
+      currentUser = null;
+      localStorage.removeItem("aura_current_user");
+      applyGuestUserToUI();
+      closeModal("profile-modal");
+      loadSessions();
+      loadDashboardData();
+      try {
+        await fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active_provider: "groq" })
+        });
+        loadSettings();
+      } catch (e) {}
+      showToast("Signed out. Guest mode active (Free Groq).");
     });
   }
 
@@ -619,12 +725,30 @@ function bindEvents() {
     });
   });
 
-  // Settings Form Submit
+  // Settings Provider Gating & Form Submit
+  const settingProviderEl = document.getElementById("setting-provider");
+  if (settingProviderEl) {
+    settingProviderEl.addEventListener("change", (e) => {
+      const selected = e.target.value;
+      if ((selected === "gemini" || selected === "openrouter" || selected === "ollama") && !currentUser) {
+        showToast(`🔒 Free account required for ${selected === "gemini" ? "Google Gemini" : selected.toUpperCase()}`);
+        e.target.value = "groq";
+        closeModal("settings-modal");
+        openLoginModal(`Sign in or create a free account to unlock Google Gemini 2.5 Flash and OpenRouter models.`);
+      }
+    });
+  }
+
   const settingsForm = document.getElementById("settings-form");
   if (settingsForm) {
     settingsForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const provider = document.getElementById("setting-provider").value;
+      let provider = document.getElementById("setting-provider").value;
+      if ((provider === "gemini" || provider === "openrouter" || provider === "ollama") && !currentUser) {
+        closeModal("settings-modal");
+        openLoginModal(`Sign in or create a free account to unlock ${provider === "gemini" ? "Google Gemini 2.5 Flash" : provider.toUpperCase()}.`);
+        return;
+      }
       const openrouterKey = document.getElementById("setting-openrouter-key") ? document.getElementById("setting-openrouter-key").value.trim() : "";
       const openrouterModel = document.getElementById("setting-openrouter-model") ? document.getElementById("setting-openrouter-model").value : "";
       const geminiKey = document.getElementById("setting-gemini-key") ? document.getElementById("setting-gemini-key").value.trim() : "";
@@ -835,7 +959,8 @@ function updateLiveTimeAndWeather() {
 // --- Chat Sessions Management ---
 async function loadSessions() {
   try {
-    const res = await fetch("/api/sessions");
+    const url = currentUser ? `/api/sessions?user_id=${currentUser.id}` : "/api/sessions";
+    const res = await fetch(url);
     const sessions = await res.json();
     const todayList = document.getElementById("history-today");
     const olderList = document.getElementById("history-older");
@@ -885,7 +1010,10 @@ async function createNewChat() {
   const res = await fetch("/api/sessions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title: "New Conversation" })
+    body: JSON.stringify({
+      title: "New Conversation",
+      user_id: currentUser ? currentUser.id : null
+    })
   });
   const newSess = await res.json();
   selectSession(newSess.id, newSess.title);
@@ -980,7 +1108,10 @@ async function handleSendMessage() {
       const sRes = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "Photo Retouch Studio" })
+        body: JSON.stringify({
+          title: "Photo Retouch Studio",
+          user_id: currentUser ? currentUser.id : null
+        })
       });
       const sData = await sRes.json();
       currentSessionId = sData.id;
@@ -1069,7 +1200,10 @@ async function handleSendMessage() {
     const sRes = await fetch("/api/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: text.slice(0, 26) })
+      body: JSON.stringify({
+        title: text.slice(0, 26),
+        user_id: currentUser ? currentUser.id : null
+      })
     });
     const sData = await sRes.json();
     currentSessionId = sData.id;
@@ -1087,7 +1221,8 @@ async function handleSendMessage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         session_id: currentSessionId,
-        message: text
+        message: text,
+        user_id: currentUser ? currentUser.id : null
       })
     });
 
@@ -1099,6 +1234,13 @@ async function handleSendMessage() {
     const data = await res.json();
     hideActivity();
     sendBtn.disabled = false;
+
+    if (data.auth_required) {
+      appendMessageUI("assistant", data.text);
+      scrollToBottom();
+      openLoginModal("Sign in or create a free account to unlock Google Gemini & OpenRouter.");
+      return;
+    }
 
     appendMessageUI("assistant", data.text, data.tool_calls, data.citations);
     scrollToBottom();
@@ -1727,15 +1869,26 @@ async function loadSettings() {
   const s = await res.json();
 
   const providerEl = document.getElementById("setting-provider");
-  if (providerEl) providerEl.value = s.active_provider || "groq";
+  if (providerEl) {
+    if (!currentUser && (s.active_provider === "gemini" || s.active_provider === "openrouter")) {
+      providerEl.value = "groq";
+    } else {
+      providerEl.value = s.active_provider || "groq";
+    }
+  }
   
   const badge = document.getElementById("active-model-badge");
   if (badge) {
     let provName = "⚡ Groq Free Active";
-    if (s.active_provider === "groq") provName = "⚡ Groq Free Active";
-    else if (s.active_provider === "gemini") provName = "✨ Gemini (BYOK Active)";
-    else if (s.active_provider === "openrouter") provName = "OpenRouter (Free)";
-    else provName = `${(s.active_provider || "groq").toUpperCase()} Active`;
+    if (!currentUser) {
+      provName = "⚡ Groq Free (Guest)";
+    } else if (s.active_provider === "gemini") {
+      provName = "✨ Gemini 2.5 Flash Active";
+    } else if (s.active_provider === "openrouter") {
+      provName = "🌐 OpenRouter Active";
+    } else {
+      provName = "⚡ Groq Free Active";
+    }
     badge.textContent = provName;
   }
 
@@ -1766,6 +1919,71 @@ async function loadSettings() {
   if (groqModelEl && s.groq_model) {
     groqModelEl.value = s.groq_model;
   }
+}
+
+// --- Auth State & User Profile Management ---
+async function checkAuthStatus() {
+  try {
+    const saved = localStorage.getItem("aura_current_user");
+    if (saved) {
+      currentUser = JSON.parse(saved);
+    }
+  } catch (e) {
+    currentUser = null;
+  }
+
+  try {
+    const query = currentUser?.id ? `?user_id=${currentUser.id}` : "";
+    const res = await fetch(`/api/auth/status${query}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated && data.user) {
+        currentUser = data.user;
+        localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+        applyUserProfileToUI(currentUser);
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn("Auth check error:", e);
+  }
+
+  if (currentUser) {
+    applyUserProfileToUI(currentUser);
+  } else {
+    applyGuestUserToUI();
+  }
+}
+
+function applyGuestUserToUI() {
+  const sidebarName = document.getElementById("user-display-name");
+  if (sidebarName) sidebarName.textContent = "Guest Visitor";
+  const sidebarRole = document.getElementById("user-display-role");
+  if (sidebarRole) sidebarRole.textContent = "⚡ Free Groq AI Mode";
+  const sidebarAvatar = document.getElementById("user-avatar-img");
+  if (sidebarAvatar) sidebarAvatar.src = DEFAULT_MALE_AVATAR;
+
+  const headerName = document.getElementById("header-display-name");
+  if (headerName) headerName.textContent = "Sign In / Join";
+  const headerAvatar = document.getElementById("header-avatar-img");
+  if (headerAvatar) headerAvatar.src = DEFAULT_MALE_AVATAR;
+
+  const dashWelcomeName = document.getElementById("dash-welcome-name");
+  if (dashWelcomeName) dashWelcomeName.textContent = "Guest";
+
+  const btnCreate = document.getElementById("sidebar-create-acc-btn");
+  if (btnCreate) {
+    btnCreate.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Sign In';
+  }
+}
+
+function openLoginModal(message) {
+  switchProfileTab("login");
+  const banner = document.querySelector("#login-account-form .byok-banner");
+  if (banner && message) {
+    banner.innerHTML = `<i class="fa-solid fa-lock text-amber"></i> <strong>${escapeHtml(message)}</strong>`;
+  }
+  document.getElementById("profile-modal").classList.add("open");
 }
 
 // --- User Profile & Account Management ---
@@ -1870,21 +2088,26 @@ function applyUserProfileToUI(user) {
 function switchProfileTab(tab) {
   const tabProfile = document.getElementById("tab-profile-view-btn");
   const tabReg = document.getElementById("tab-register-btn");
+  const tabLogin = document.getElementById("tab-login-btn");
   const formProfile = document.getElementById("profile-edit-form");
   const formReg = document.getElementById("register-account-form");
+  const formLogin = document.getElementById("login-account-form");
   const modalTitle = document.getElementById("profile-modal-title");
+
+  [tabProfile, tabReg, tabLogin].forEach((t) => t && t.classList.remove("active"));
+  [formProfile, formReg, formLogin].forEach((f) => f && (f.style.display = "none"));
 
   if (tab === "register") {
     if (tabReg) tabReg.classList.add("active");
-    if (tabProfile) tabProfile.classList.remove("active");
     if (formReg) formReg.style.display = "flex";
-    if (formProfile) formProfile.style.display = "none";
-    if (modalTitle) modalTitle.textContent = "Create New Account";
+    if (modalTitle) modalTitle.textContent = "Create Free Account";
+  } else if (tab === "login") {
+    if (tabLogin) tabLogin.classList.add("active");
+    if (formLogin) formLogin.style.display = "flex";
+    if (modalTitle) modalTitle.textContent = "Sign In to Aura";
   } else {
     if (tabProfile) tabProfile.classList.add("active");
-    if (tabReg) tabReg.classList.remove("active");
     if (formProfile) formProfile.style.display = "flex";
-    if (formReg) formReg.style.display = "none";
     if (modalTitle) modalTitle.textContent = "Account & Profile";
   }
 }
@@ -2987,6 +3210,21 @@ function initImageStudio() {
       if (hexLabel) hexLabel.textContent = passportNewBgColor.toUpperCase();
     });
   }
+
+  const customSwatches = document.querySelectorAll("#photo-bg-custom-swatches .mini-swatch");
+  customSwatches.forEach((sw) => {
+    sw.addEventListener("click", () => {
+      const color = sw.getAttribute("data-color");
+      if (color) {
+        passportNewBgColor = color;
+        passportColorBtns.forEach((b) => b.classList.remove("active"));
+        if (pickerImageBg) pickerImageBg.value = color;
+        const hexLabel = document.getElementById("label-image-bg-hex");
+        if (hexLabel) hexLabel.textContent = color.toUpperCase();
+        showToast(`Selected backdrop color: ${color.toUpperCase()}`);
+      }
+    });
+  });
 
   const sliderBgTol = document.getElementById("slider-bg-tolerance");
   if (sliderBgTol) {

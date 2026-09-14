@@ -243,6 +243,17 @@ def replace_image_background(
             # Match threshold for candidate background pixels
             cand_mask = (norm_dist <= float(tolerance))
 
+            # Human skin & facial feature protection:
+            r_c = arr[:, :, 0]
+            g_c = arr[:, :, 1]
+            b_c = arr[:, :, 2]
+            is_skin = (r_c > g_c) & (g_c >= (b_c - 15)) & (r_c > 45) & ((r_c - b_c) > 12)
+
+            # If backdrop is blue, green, or cool tone, exclude skin from candidate backdrop
+            is_cool_bg = (target_rgb[2] > target_rgb[0]) or (target_rgb[1] > target_rgb[0])
+            if is_cool_bg:
+                cand_mask = cand_mask & (~is_skin)
+
             # Border-connected component filtering: Only pixels connected to the outer edges count as background
             bg_connected = None
             try:
@@ -296,6 +307,8 @@ def replace_image_background(
 
             color_alpha = np.clip((norm_dist - t_low) / (t_high - t_low), 0.0, 1.0)
             final_alpha = np.where(bg_connected, color_alpha, 1.0)
+            if is_cool_bg:
+                final_alpha = np.where(is_skin, 1.0, final_alpha)
 
             mask_img = Image.fromarray((final_alpha * 255).astype(np.uint8), mode="L")
             if feather > 0:

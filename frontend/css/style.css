@@ -4057,22 +4057,121 @@ body {
     border-radius: var(--radius-lg);
   }
 
-  /* Image Studio Workspace */
+  /* Image Studio Workspace - Mobile Optimized */
   .image-studio-workspace {
     grid-template-columns: 1fr;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     gap: 16px;
-  }
-
-  .studio-controls-panel {
-    width: 100%;
   }
 
   .studio-preview-panel {
     width: 100%;
-    min-height: 240px;
-    max-height: 360px;
+    min-height: 220px;
+    max-height: 320px;
+    order: -1;
+  }
+
+  .studio-controls-panel {
+    width: 100%;
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  .studio-tab-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .studio-tab-btn {
+    font-size: 0.72rem;
+    padding: 7px 11px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    min-height: 36px;
+  }
+
+  .platform-tabs-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .platform-tab {
+    font-size: 0.72rem;
+    padding: 6px 11px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    min-height: 34px;
+  }
+
+  .fitting-mode-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .fitting-mode-btn {
+    font-size: 0.72rem;
+    padding: 7px 8px;
+    min-height: 36px;
+    justify-content: center;
+  }
+
+  .photo-bg-quick-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .btn-banner-convert {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .target-bg-detect-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .detect-actions-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .detect-actions-row .btn-tool-sm {
+    flex: 1;
+    justify-content: center;
+    min-height: 36px;
+  }
+
+  .passport-colors-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .passport-color-btn {
+    min-height: 42px;
+    padding: 8px 10px;
+    font-size: 0.74rem;
+  }
+
+  .custom-bg-color-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .studio-subpanel-tabs {

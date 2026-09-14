@@ -110,28 +110,16 @@ class SupabaseAuthManager:
                 return {"success": False, "error": f"Supabase auth error: {str(e)}"}
 
         # Local account match
-        with get_connection() as conn:
-            row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-            if row:
-                conn.execute("UPDATE users SET is_active = 0")
-                conn.execute("UPDATE users SET is_active = 1 WHERE id = ?", (row["id"],))
-                active = get_active_user()
-                return {
-                    "success": True,
-                    "mode": "local",
-                    "user": active,
-                    "token": f"local_sess_{uuid.uuid4().hex[:16]}",
-                    "message": "Signed in successfully!"
-                }
-            
-            # If user not found in local db, create automatically
-            active = create_user_account(name=email.split("@")[0].capitalize(), email=email, role="Creator", gender="male")
+        from backend.database import authenticate_user
+        local_user = authenticate_user(email, password)
+        if local_user:
             return {
                 "success": True,
                 "mode": "local",
-                "user": active,
+                "user": local_user,
                 "token": f"local_sess_{uuid.uuid4().hex[:16]}",
-                "message": "Signed in with new profile!"
+                "message": "Signed in successfully!"
             }
+        return {"success": False, "error": "Invalid email or password"}
 
 supabase_auth = SupabaseAuthManager()

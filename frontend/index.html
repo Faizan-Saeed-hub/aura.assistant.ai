@@ -824,10 +824,6 @@
                         <span class="color-dot" style="background:#f8fafc; border:1px solid #cbd5e1;"></span>
                         <span class="color-name">Soft Off-White</span>
                       </button>
-                      <button type="button" class="passport-color-btn" data-color="#dc2626" title="Passport Red">
-                        <span class="color-dot" style="background:#dc2626;"></span>
-                        <span class="color-name">Passport Red</span>
-                      </button>
                       <button type="button" class="passport-color-btn" data-color="#94a3b8" title="Studio Gray">
                         <span class="color-dot" style="background:#94a3b8;"></span>
                         <span class="color-name">Studio Gray</span>
@@ -840,10 +836,17 @@
 
                     <!-- Any Custom Color Picker -->
                     <div class="custom-bg-color-row">
-                      <span class="custom-picker-title"><i class="fa-solid fa-palette"></i> Or Pick Any Color:</span>
+                      <span class="custom-picker-title"><i class="fa-solid fa-palette"></i> Pick Any Color:</span>
                       <div class="custom-picker-input-wrap">
-                        <input type="color" id="picker-image-bg-color" value="#ffffff" title="Pick any custom hex color" />
+                        <input type="color" id="picker-image-bg-color" value="#ffffff" title="Pick any custom color" />
                         <span id="label-image-bg-hex">#FFFFFF</span>
+                      </div>
+                      <div class="quick-swatches mini-swatches" id="photo-bg-custom-swatches" style="display: flex; gap: 4px; margin-left: 8px;">
+                        <button type="button" class="swatch-btn mini-swatch" data-color="#0f172a" style="background:#0f172a; width: 22px; height: 22px;" title="Slate Dark"></button>
+                        <button type="button" class="swatch-btn mini-swatch" data-color="#059669" style="background:#059669; width: 22px; height: 22px;" title="Emerald"></button>
+                        <button type="button" class="swatch-btn mini-swatch" data-color="#7c3aed" style="background:#7c3aed; width: 22px; height: 22px;" title="Purple"></button>
+                        <button type="button" class="swatch-btn mini-swatch" data-color="#0284c7" style="background:#0284c7; width: 22px; height: 22px;" title="Sky Blue"></button>
+                        <button type="button" class="swatch-btn mini-swatch" data-color="#f59e0b" style="background:#f59e0b; width: 22px; height: 22px;" title="Warm Amber"></button>
                       </div>
                     </div>
                   </div>
@@ -1011,7 +1014,7 @@
             <button type="button" class="btn-omnibar-tool" id="quick-attach-btn" title="Quick Actions & Studios">
               <i class="fa-solid fa-plus"></i>
             </button>
-            <input type="file" id="quick-file-input" style="display: none;" accept=".pdf,.txt,.md,.docx,.csv" />
+            <input type="file" id="quick-file-input" style="display: none;" accept=".pdf,.txt,.md,.docx,.csv,.png,.jpg,.jpeg,.webp" />
             <input type="file" id="chat-photo-input" style="display: none;" accept="image/*" />
 
             <textarea
@@ -1054,13 +1057,13 @@
         </button>
       </div>
       <div class="modal-body">
-        <p class="modal-subtitle">Upload documents (PDF, DOCX, TXT, MD). Aura indexes them with vector embeddings to ground chat responses with source citations.</p>
+        <p class="modal-subtitle">Upload documents (PDF, DOCX, TXT, MD) or images (PNG, JPG, WEBP). Aura indexes them with vector embeddings to ground chat responses with source citations.</p>
         
         <div class="drop-zone" id="rag-drop-zone">
           <i class="fa-solid fa-cloud-arrow-up"></i>
-          <p>Drag & drop your files here or <span class="browse-link">browse</span></p>
-          <span class="drop-sub">Supported: PDF, DOCX, TXT, MD, CSV</span>
-          <input type="file" id="modal-file-input" style="display: none;" accept=".pdf,.txt,.md,.docx,.csv" />
+          <p>Drag & drop your files or photos here or <span class="browse-link">browse</span></p>
+          <span class="drop-sub">Supported: PDF, DOCX, TXT, MD, CSV, PNG, JPG, WEBP</span>
+          <input type="file" id="modal-file-input" style="display: none;" accept=".pdf,.txt,.md,.docx,.csv,.png,.jpg,.jpeg,.webp" />
         </div>
 
         <div class="rag-table-section">
@@ -1273,13 +1276,42 @@
       </div>
       <div class="modal-body">
         <div class="profile-tabs-bar">
+          <button type="button" class="tab-pill" id="tab-login-btn">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+          </button>
+          <button type="button" class="tab-pill" id="tab-register-btn">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+          </button>
           <button type="button" class="tab-pill active" id="tab-profile-view-btn">
             <i class="fa-solid fa-id-card"></i> My Profile
           </button>
-          <button type="button" class="tab-pill" id="tab-register-btn">
-            <i class="fa-solid fa-user-plus"></i> Create New Account
-          </button>
         </div>
+
+        <!-- Tab 0: Sign In Form -->
+        <form class="clean-profile-form" id="login-account-form" style="display: none;">
+          <div class="byok-banner" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 0.8rem; color: #1e40af;">
+            <i class="fa-solid fa-lock-open"></i> <strong>Unlock Google Gemini 2.5 & OpenRouter:</strong> Guests have unlimited instant access to Groq. Sign in to unlock Gemini, OpenRouter, cloud synchronization, and your personal memory vault.
+          </div>
+
+          <div class="form-field">
+            <label for="login-email-input">Email Address</label>
+            <input type="email" id="login-email-input" class="clean-input" placeholder="faizan@example.com" required />
+          </div>
+
+          <div class="form-field">
+            <label for="login-password-input">Password</label>
+            <input type="password" id="login-password-input" class="clean-input" placeholder="••••••••" required />
+          </div>
+
+          <div class="modal-footer-actions" style="margin-top: 10px;">
+            <button type="button" class="btn-cancel close-modal-btn" data-modal="profile-modal">Cancel</button>
+            <button type="submit" class="btn-accent-pill" id="btn-submit-login"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</button>
+          </div>
+
+          <div style="margin-top: 14px; font-size: 0.78rem; color: #64748b; text-align: center;">
+            Don't have an account? <button type="button" id="btn-goto-register" style="background:none; border:none; color: #6366f1; font-weight: 600; cursor: pointer; text-decoration: underline;">Create free account</button>
+          </div>
+        </form>
 
         <!-- Tab 1: Current Profile Form -->
         <form class="clean-profile-form" id="profile-edit-form">
@@ -1342,9 +1374,12 @@
             <textarea id="profile-bio-input" class="clean-input" rows="2" placeholder="Tell Aura about your background, goals, preferences..."></textarea>
           </div>
 
-          <div class="modal-footer-actions" style="margin-top: 10px;">
-            <button type="button" class="btn-cancel close-modal-btn" data-modal="profile-modal">Cancel</button>
-            <button type="submit" class="btn-accent-pill">Save Profile Changes</button>
+          <div class="modal-footer-actions" style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn-cancel" id="btn-user-signout" style="color: #ef4444; border-color: rgba(239,68,68,0.3);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-cancel close-modal-btn" data-modal="profile-modal">Cancel</button>
+              <button type="submit" class="btn-accent-pill">Save Profile Changes</button>
+            </div>
           </div>
         </form>
 
@@ -1411,6 +1446,10 @@
           <div class="modal-footer-actions" style="margin-top: 10px;">
             <button type="button" class="btn-cancel close-modal-btn" data-modal="profile-modal">Cancel</button>
             <button type="submit" class="btn-accent-pill" id="btn-submit-register">Create Account</button>
+          </div>
+
+          <div style="margin-top: 14px; font-size: 0.78rem; color: #64748b; text-align: center;">
+            Already have an account? <button type="button" id="btn-goto-login" style="background:none; border:none; color: #6366f1; font-weight: 600; cursor: pointer; text-decoration: underline;">Sign In here</button>
           </div>
         </form>
       </div>
