@@ -7,7 +7,7 @@ from backend.rag.vector_store import vector_store
 from backend.llm.client import llm_client
 from backend.llm.prompts import SYSTEM_PERSONA_PROMPT
 
-from backend.database import get_active_user
+from backend.database import get_active_user, get_connection
 from backend.auth.supabase_client import supabase_auth
 
 class AgentOrchestrator:

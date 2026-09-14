@@ -176,7 +176,7 @@ function bindEvents() {
       switchProfileTab("profile");
     } else {
       closeModal("profile-modal");
-      showWelcomeGateway("signin");
+      showWelcomeGateway("signup");
     }
   });
   setupModal("open-profile-avatar-group", "profile-modal", () => {
@@ -185,7 +185,7 @@ function bindEvents() {
       switchProfileTab("profile");
     } else {
       closeModal("profile-modal");
-      showWelcomeGateway("choices");
+      showWelcomeGateway("signup");
     }
   });
   setupModal("sidebar-create-acc-btn", "profile-modal", () => {
@@ -2116,7 +2116,7 @@ function saveUserSession(user) {
   } catch (e) {}
   loadRagDocuments();
   loadDashboardFiles();
-  loadChatSessions();
+  loadSessions();
 }
 
 function clearUserSession() {
@@ -2128,7 +2128,7 @@ function clearUserSession() {
   } catch (e) {}
   loadRagDocuments();
   loadDashboardFiles();
-  loadChatSessions();
+  loadSessions();
 }
 
 function isUserSessionExpired() {
@@ -2537,6 +2537,7 @@ function applyUserProfileToUI(user) {
 }
 
 function switchProfileTab(tab) {
+  const tabsBar = document.querySelector(".profile-tabs-bar");
   const tabProfile = document.getElementById("tab-profile-view-btn");
   const tabReg = document.getElementById("tab-register-btn");
   const tabLogin = document.getElementById("tab-login-btn");
@@ -2544,6 +2545,25 @@ function switchProfileTab(tab) {
   const formReg = document.getElementById("register-account-form");
   const formLogin = document.getElementById("login-account-form");
   const modalTitle = document.getElementById("profile-modal-title");
+
+  // If user is signed in: show ONLY the profile update form and hide Sign In / Register tabs
+  if (currentUser) {
+    if (tabsBar) tabsBar.style.display = "none";
+    if (tabLogin) tabLogin.style.display = "none";
+    if (tabReg) tabReg.style.display = "none";
+    if (tabProfile) tabProfile.style.display = "none";
+    if (formProfile) formProfile.style.display = "flex";
+    if (formReg) formReg.style.display = "none";
+    if (formLogin) formLogin.style.display = "none";
+    if (modalTitle) modalTitle.textContent = "Account & Profile";
+    return;
+  } else {
+    // If guest: show registration / login options
+    if (tabsBar) tabsBar.style.display = "flex";
+    if (tabLogin) tabLogin.style.display = "inline-flex";
+    if (tabReg) tabReg.style.display = "inline-flex";
+    if (tabProfile) tabProfile.style.display = "none";
+  }
 
   [tabProfile, tabReg, tabLogin].forEach((t) => t && t.classList.remove("active"));
   [formProfile, formReg, formLogin].forEach((f) => f && (f.style.display = "none"));
@@ -2575,14 +2595,22 @@ function escapeHtml(str) {
 function showToast(msg) {
   const toast = document.createElement("div");
   toast.style.cssText = `
-    position: fixed; bottom: 24px; right: 24px;
-    background: #0f172a; color: #fff; padding: 10px 18px;
-    border-radius: 9999px; font-weight: 600; font-size: 0.84rem;
-    z-index: 9999; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    position: fixed; top: 20px; right: 20px;
+    background: #0f172a; color: #ffffff; padding: 12px 22px;
+    border-radius: 9999px; font-weight: 600; font-size: 0.88rem;
+    z-index: 100000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; gap: 8px;
+    max-width: 90vw;
+    animation: fadeInView 0.2s ease-out;
   `;
-  toast.textContent = msg;
+  toast.innerHTML = msg;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2500);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 0.3s ease";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 // ==================== EMAIL STUDIO LOGIC ====================
