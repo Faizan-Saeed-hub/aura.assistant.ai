@@ -697,6 +697,11 @@ app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 def serve_index():
     return FileResponse(FRONTEND_DIR / "index.html")
 
+@app.get("/admin")
+@app.get("/admin.html")
+def serve_admin():
+    return FileResponse(FRONTEND_DIR / "admin.html")
+
 @app.get("/manifest.json")
 def serve_manifest():
     return FileResponse(FRONTEND_DIR / "manifest.json", media_type="application/manifest+json")
