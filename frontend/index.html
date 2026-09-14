@@ -1456,6 +1456,176 @@
     </div>
   </div>
 
+  <!-- ==========================================================
+       WELCOME AUTHENTICATION GATEWAY (INITIAL VISIT PROMPT)
+       Options: 1. Sign In | 2. Create Account | 3. Continue as Guest
+       ========================================================== -->
+  <div class="welcome-gate-overlay" id="welcome-gate-overlay">
+    <div class="welcome-gate-card">
+      
+      <!-- Brand Header -->
+      <div class="gate-header">
+        <div class="gate-brand-badge">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Aura AI Personal Assistant</span>
+        </div>
+        <h1 class="gate-title" id="gate-main-heading">Get Started with Aura</h1>
+        <p class="gate-subtitle" id="gate-main-subheading">
+          Your personal intelligence suite with long-term memory, voice interaction, document intelligence, and multi-model AI.
+        </p>
+      </div>
+
+      <!-- VIEW 1: THE 3 CORE CHOICES -->
+      <div id="gate-view-choices">
+        <div class="gate-choices-grid">
+          
+          <!-- Choice 1: Sign In -->
+          <div class="gate-choice-card" id="gate-card-signin" role="button" tabindex="0">
+            <span class="gate-card-pill pill-neutral">Existing User</span>
+            <div class="gate-choice-icon icon-signin">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </div>
+            <h3 class="gate-choice-title">Sign In</h3>
+            <p class="gate-choice-desc">
+              Access your personal chats, memory vault, saved documents, and unlock Google Gemini 2.5 Flash & OpenRouter.
+            </p>
+            <button type="button" class="gate-choice-btn btn-card-signin">
+              <span>Sign In to Account</span>
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Choice 2: Create Account (Featured) -->
+          <div class="gate-choice-card featured" id="gate-card-signup" role="button" tabindex="0">
+            <span class="gate-card-pill pill-primary">Recommended</span>
+            <div class="gate-choice-icon icon-signup">
+              <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <h3 class="gate-choice-title">Create Account</h3>
+            <p class="gate-choice-desc">
+              Set up your profile, customize avatar, enable Supabase cloud sync, and get full access to advanced AI models.
+            </p>
+            <button type="button" class="gate-choice-btn btn-card-signup">
+              <span>Create Free Account</span>
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Choice 3: Continue as Guest -->
+          <div class="gate-choice-card" id="gate-card-guest" role="button" tabindex="0">
+            <span class="gate-card-pill pill-emerald">Instant Free</span>
+            <div class="gate-choice-icon icon-guest">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <h3 class="gate-choice-title">Continue as Guest</h3>
+            <p class="gate-choice-desc">
+              Jump straight into conversations without signing up. Unlimited, lightning-fast chat powered by Groq Compound Mini.
+            </p>
+            <button type="button" class="gate-choice-btn btn-card-guest">
+              <span>Start as Guest</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VIEW 2: SIGN IN FORM (Hidden Initially) -->
+      <div id="gate-view-signin" class="gate-form-view" style="display: none;">
+        <div class="gate-form-header">
+          <h2 class="gate-form-title">Welcome Back</h2>
+          <p class="gate-form-subtitle">Enter your email and password to log in to your account.</p>
+        </div>
+
+        <form id="gate-form-login-element">
+          <div class="gate-input-group">
+            <label for="gate-login-email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+            <input type="email" id="gate-login-email" class="gate-input" placeholder="name@example.com" required />
+          </div>
+
+          <div class="gate-input-group">
+            <label for="gate-login-password"><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" id="gate-login-password" class="gate-input" placeholder="••••••••" required />
+          </div>
+
+          <div class="gate-actions-row">
+            <button type="button" class="btn-gate-back" id="btn-gate-back-from-signin">
+              <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <button type="submit" class="btn-gate-submit" id="btn-gate-submit-login">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+            </button>
+          </div>
+
+          <div class="gate-switch-link">
+            Don't have an account yet? 
+            <button type="button" id="btn-gate-switch-to-signup">Create one now</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- VIEW 3: CREATE ACCOUNT FORM (Hidden Initially) -->
+      <div id="gate-view-signup" class="gate-form-view" style="display: none;">
+        <div class="gate-form-header">
+          <h2 class="gate-form-title">Create Free Account</h2>
+          <p class="gate-form-subtitle">Unlock personalized AI, Google Gemini 2.5 Flash, and Cloud Sync.</p>
+        </div>
+
+        <form id="gate-form-signup-element">
+          <!-- Gender selection for auto avatar -->
+          <div class="gate-input-group">
+            <label>Gender (Selects Default Avatar)</label>
+            <div class="gender-radio-group" style="display: flex; gap: 10px; margin-top: 4px;">
+              <label class="gender-radio-pill active" id="gate-pill-male" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(99,102,241,0.2); color: #fff;">
+                <input type="radio" name="gate-reg-gender" value="male" checked style="display: none;" />
+                <i class="fa-solid fa-mars"></i> Male
+              </label>
+              <label class="gender-radio-pill" id="gate-pill-female" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(30,41,59,0.5); color: #cbd5e1;">
+                <input type="radio" name="gate-reg-gender" value="female" style="display: none;" />
+                <i class="fa-solid fa-venus"></i> Female
+              </label>
+            </div>
+          </div>
+
+          <div class="gate-input-group">
+            <label for="gate-reg-name"><i class="fa-solid fa-user"></i> Full Name</label>
+            <input type="text" id="gate-reg-name" class="gate-input" placeholder="e.g. Faizan" required />
+          </div>
+
+          <div class="gate-input-group">
+            <label for="gate-reg-email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+            <input type="email" id="gate-reg-email" class="gate-input" placeholder="faizan@example.com" required />
+          </div>
+
+          <div class="gate-input-group">
+            <label for="gate-reg-password"><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" id="gate-reg-password" class="gate-input" placeholder="At least 6 characters" required minlength="6" />
+          </div>
+
+          <div class="gate-input-group">
+            <label for="gate-reg-role"><i class="fa-solid fa-briefcase"></i> Role / Title (Optional)</label>
+            <input type="text" id="gate-reg-role" class="gate-input" placeholder="e.g. AI Engineer, Designer, Student" />
+          </div>
+
+          <div class="gate-actions-row">
+            <button type="button" class="btn-gate-back" id="btn-gate-back-from-signup">
+              <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <button type="submit" class="btn-gate-submit" id="btn-gate-submit-signup">
+              <i class="fa-solid fa-user-plus"></i> Create Account
+            </button>
+          </div>
+
+          <div class="gate-switch-link">
+            Already have an account? 
+            <button type="button" id="btn-gate-switch-to-signin">Sign In here</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
 
 
   <!-- Markdown Parser & Code Syntax Highlighting -->

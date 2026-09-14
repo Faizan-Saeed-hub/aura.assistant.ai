@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initVoiceRecognition();
   initVoiceToggleUI();
   bindEvents();
+  initWelcomeGateway();
   await checkAuthStatus();
   loadSessions();
   loadSettings();
@@ -172,7 +173,8 @@ function bindEvents() {
       loadUserProfile();
       switchProfileTab("profile");
     } else {
-      switchProfileTab("login");
+      closeModal("profile-modal");
+      showWelcomeGateway("signin");
     }
   });
   setupModal("open-profile-avatar-group", "profile-modal", () => {
@@ -180,7 +182,8 @@ function bindEvents() {
       loadUserProfile();
       switchProfileTab("profile");
     } else {
-      switchProfileTab("login");
+      closeModal("profile-modal");
+      showWelcomeGateway("choices");
     }
   });
   setupModal("sidebar-create-acc-btn", "profile-modal", () => {
@@ -188,7 +191,8 @@ function bindEvents() {
       loadUserProfile();
       switchProfileTab("profile");
     } else {
-      switchProfileTab("register");
+      closeModal("profile-modal");
+      showWelcomeGateway("signup");
     }
   });
 
@@ -417,6 +421,7 @@ function bindEvents() {
       } catch (e) {}
       currentUser = null;
       localStorage.removeItem("aura_current_user");
+      sessionStorage.removeItem("aura_guest_dismissed");
       applyGuestUserToUI();
       closeModal("profile-modal");
       loadSessions();
@@ -430,6 +435,7 @@ function bindEvents() {
         loadSettings();
       } catch (e) {}
       showToast("Signed out. Guest mode active (Free Groq).");
+      showWelcomeGateway("choices");
     });
   }
 
@@ -1941,6 +1947,7 @@ async function checkAuthStatus() {
         currentUser = data.user;
         localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
         applyUserProfileToUI(currentUser);
+        hideWelcomeGateway();
         return;
       }
     }
@@ -1950,8 +1957,15 @@ async function checkAuthStatus() {
 
   if (currentUser) {
     applyUserProfileToUI(currentUser);
+    hideWelcomeGateway();
   } else {
     applyGuestUserToUI();
+    const guestDismissed = sessionStorage.getItem("aura_guest_dismissed") === "true";
+    if (!guestDismissed) {
+      showWelcomeGateway("choices");
+    } else {
+      hideWelcomeGateway();
+    }
   }
 }
 
@@ -1978,12 +1992,236 @@ function applyGuestUserToUI() {
 }
 
 function openLoginModal(message) {
-  switchProfileTab("login");
-  const banner = document.querySelector("#login-account-form .byok-banner");
-  if (banner && message) {
-    banner.innerHTML = `<i class="fa-solid fa-lock text-amber"></i> <strong>${escapeHtml(message)}</strong>`;
+  showWelcomeGateway("signin");
+  if (message) {
+    showToast(message);
   }
-  document.getElementById("profile-modal").classList.add("open");
+}
+
+// --- Welcome Authentication Gateway Controller ---
+function showGateView(view) {
+  const viewChoices = document.getElementById("gate-view-choices");
+  const viewSignin = document.getElementById("gate-view-signin");
+  const viewSignup = document.getElementById("gate-view-signup");
+  const heading = document.getElementById("gate-main-heading");
+  const subheading = document.getElementById("gate-main-subheading");
+
+  if (viewChoices) viewChoices.style.display = view === "choices" ? "block" : "none";
+  if (viewSignin) viewSignin.style.display = view === "signin" ? "block" : "none";
+  if (viewSignup) viewSignup.style.display = view === "signup" ? "block" : "none";
+
+  if (heading && subheading) {
+    if (view === "choices") {
+      heading.textContent = "Get Started with Aura";
+      subheading.textContent = "Your personal intelligence suite with long-term memory, voice interaction, document intelligence, and multi-model AI.";
+    } else if (view === "signin") {
+      heading.textContent = "Sign In to Aura";
+      subheading.textContent = "Log in to access your personal dashboard, Google Gemini 2.5 Flash, and cloud memory.";
+    } else if (view === "signup") {
+      heading.textContent = "Create Free Account";
+      subheading.textContent = "Join Aura to unlock multi-model intelligence, custom avatars, and cross-device synchronization.";
+    }
+  }
+}
+
+function showWelcomeGateway(view = "choices") {
+  const overlay = document.getElementById("welcome-gate-overlay");
+  if (!overlay) return;
+  showGateView(view);
+  overlay.classList.remove("hidden");
+}
+
+function hideWelcomeGateway() {
+  const overlay = document.getElementById("welcome-gate-overlay");
+  if (!overlay) return;
+  overlay.classList.add("hidden");
+}
+
+function initWelcomeGateway() {
+  const overlay = document.getElementById("welcome-gate-overlay");
+  if (!overlay) return;
+
+  // Choice 1: Sign In
+  const cardSignin = document.getElementById("gate-card-signin");
+  if (cardSignin) {
+    cardSignin.addEventListener("click", () => showGateView("signin"));
+  }
+
+  // Choice 2: Create Account
+  const cardSignup = document.getElementById("gate-card-signup");
+  if (cardSignup) {
+    cardSignup.addEventListener("click", () => showGateView("signup"));
+  }
+
+  // Choice 3: Continue as Guest
+  const cardGuest = document.getElementById("gate-card-guest");
+  if (cardGuest) {
+    cardGuest.addEventListener("click", () => {
+      sessionStorage.setItem("aura_guest_dismissed", "true");
+      hideWelcomeGateway();
+      applyGuestUserToUI();
+      showToast("⚡ Continuing as Guest! Groq Compound Mini is ready.");
+    });
+  }
+
+  // Back buttons
+  const backFromSignin = document.getElementById("btn-gate-back-from-signin");
+  if (backFromSignin) {
+    backFromSignin.addEventListener("click", () => showGateView("choices"));
+  }
+  const backFromSignup = document.getElementById("btn-gate-back-from-signup");
+  if (backFromSignup) {
+    backFromSignup.addEventListener("click", () => showGateView("choices"));
+  }
+
+  // Switch between Signin and Signup inside gate
+  const switchSignup = document.getElementById("btn-gate-switch-to-signup");
+  if (switchSignup) {
+    switchSignup.addEventListener("click", () => showGateView("signup"));
+  }
+  const switchSignin = document.getElementById("btn-gate-switch-to-signin");
+  if (switchSignin) {
+    switchSignin.addEventListener("click", () => showGateView("signin"));
+  }
+
+  // Gender selection pills inside gate signup
+  const pillMale = document.getElementById("gate-pill-male");
+  const pillFemale = document.getElementById("gate-pill-female");
+  if (pillMale && pillFemale) {
+    pillMale.addEventListener("click", () => {
+      pillMale.classList.add("active");
+      pillFemale.classList.remove("active");
+      pillMale.style.background = "rgba(99,102,241,0.25)";
+      pillMale.style.borderColor = "#6366f1";
+      pillMale.style.color = "#ffffff";
+      pillFemale.style.background = "rgba(30,41,59,0.5)";
+      pillFemale.style.borderColor = "rgba(255,255,255,0.15)";
+      pillFemale.style.color = "#cbd5e1";
+      const rad = pillMale.querySelector('input[type="radio"]');
+      if (rad) rad.checked = true;
+    });
+    pillFemale.addEventListener("click", () => {
+      pillFemale.classList.add("active");
+      pillMale.classList.remove("active");
+      pillFemale.style.background = "rgba(99,102,241,0.25)";
+      pillFemale.style.borderColor = "#6366f1";
+      pillFemale.style.color = "#ffffff";
+      pillMale.style.background = "rgba(30,41,59,0.5)";
+      pillMale.style.borderColor = "rgba(255,255,255,0.15)";
+      pillMale.style.color = "#cbd5e1";
+      const rad = pillFemale.querySelector('input[type="radio"]');
+      if (rad) rad.checked = true;
+    });
+  }
+
+  // Gate Sign In Form Submit
+  const loginFormEl = document.getElementById("gate-form-login-element");
+  if (loginFormEl) {
+    loginFormEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("gate-login-email").value.trim();
+      const password = document.getElementById("gate-login-password").value;
+      const submitBtn = document.getElementById("btn-gate-submit-login");
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing In...';
+        }
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+          currentUser = data.user;
+          localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+          sessionStorage.setItem("aura_guest_dismissed", "true");
+          applyUserProfileToUI(currentUser);
+          hideWelcomeGateway();
+          loadSessions();
+          loadDashboardData();
+          showToast(`✨ Welcome back, ${currentUser.name}! Gemini & OpenRouter unlocked.`);
+          try {
+            await fetch("/api/settings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ active_provider: "gemini" })
+            });
+            loadSettings();
+          } catch (err) {}
+        } else {
+          showToast(`⚠️ Sign In failed: ${data.error || data.detail || "Invalid credentials"}`);
+        }
+      } catch (err) {
+        showToast("⚠️ Network error signing in.");
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In';
+        }
+      }
+    });
+  }
+
+  // Gate Create Account Form Submit
+  const signupFormEl = document.getElementById("gate-form-signup-element");
+  if (signupFormEl) {
+    signupFormEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("gate-reg-name").value.trim();
+      const email = document.getElementById("gate-reg-email").value.trim();
+      const password = document.getElementById("gate-reg-password").value;
+      const role = document.getElementById("gate-reg-role").value.trim() || "AI User";
+      const genderRad = document.querySelector('input[name="gate-reg-gender"]:checked');
+      const gender = genderRad ? genderRad.value : "male";
+      const avatarUrl = gender === "female" ? DEFAULT_FEMALE_AVATAR : DEFAULT_MALE_AVATAR;
+      const submitBtn = document.getElementById("btn-gate-submit-signup");
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+        }
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, gender, role, avatar_url: avatarUrl })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (data.user) {
+            currentUser = data.user;
+            localStorage.setItem("aura_current_user", JSON.stringify(currentUser));
+            sessionStorage.setItem("aura_guest_dismissed", "true");
+            applyUserProfileToUI(currentUser);
+          }
+          hideWelcomeGateway();
+          loadSessions();
+          loadDashboardData();
+          showToast(`🎉 Welcome to Aura, ${currentUser ? currentUser.name : name}! Account ready.`);
+          try {
+            await fetch("/api/settings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ active_provider: "gemini" })
+            });
+            loadSettings();
+          } catch (err) {}
+        } else {
+          showToast(`⚠️ Registration failed: ${data.error || data.detail || "Server error"}`);
+        }
+      } catch (err) {
+        showToast("⚠️ Network error creating account.");
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+        }
+      }
+    });
+  }
 }
 
 // --- User Profile & Account Management ---
