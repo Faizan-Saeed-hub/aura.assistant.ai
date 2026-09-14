@@ -35,8 +35,12 @@ class Config:
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
     
     # Supabase Cloud Auth Settings
-    SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-    SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "") or os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")
+    SUPABASE_ANON_KEY = (
+        os.getenv("SUPABASE_ANON_KEY", "") 
+        or os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "") 
+        or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+    )
     
     # Ollama settings (Local, free, offline)
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
