@@ -112,6 +112,12 @@ def init_db():
     if "user_id" not in sess_cols:
         cursor.execute("ALTER TABLE sessions ADD COLUMN user_id INTEGER DEFAULT 1")
 
+    # Migration check: Ensure user_id column exists in documents (Multi-user RAG isolation)
+    cursor.execute("PRAGMA table_info(documents)")
+    doc_cols = [row["name"] for row in cursor.fetchall()]
+    if "user_id" not in doc_cols:
+        cursor.execute("ALTER TABLE documents ADD COLUMN user_id INTEGER DEFAULT NULL")
+
     # Seed default user if none exists
     cursor.execute("SELECT COUNT(*) as count FROM users")
     if cursor.fetchone()["count"] == 0:
@@ -351,9 +357,18 @@ def update_user_profile(user_id: int, name: str, email: str, gender: Optional[st
     if g not in ("male", "female"):
         g = "male"
     default_dp = DEFAULT_MALE_AVATAR if g == "male" else DEFAULT_FEMALE_AVATAR
-    chosen_avatar = avatar_url.strip() if (avatar_url and avatar_url.strip()) else default_dp
 
     conn = get_connection()
+    current_row = conn.execute("SELECT avatar_url FROM users WHERE id = ?", (user_id,)).fetchone()
+    current_avatar = current_row["avatar_url"] if current_row else None
+
+    if avatar_url and avatar_url.strip():
+        chosen_avatar = avatar_url.strip()
+    elif current_avatar:
+        chosen_avatar = current_avatar
+    else:
+        chosen_avatar = default_dp
+
     conn.execute("""
     UPDATE users SET name = ?, email = ?, gender = ?, role = ?, bio = ?, avatar_url = ?
     WHERE id = ?

@@ -218,10 +218,25 @@ def replace_image_background(
             try:
                 import rembg
                 session = get_rembg_session()
-                if session is not None:
-                    no_bg = rembg.remove(img, session=session, post_process_mask=True)
+                # Optimize high-res images for speed: scale to max 1024px for mask computation
+                max_dim = 1024
+                if max(w, h) > max_dim:
+                    scale = max_dim / float(max(w, h))
+                    scaled_w, scaled_h = int(w * scale), int(h * scale)
+                    small_img = img.resize((scaled_w, scaled_h), Image.Resampling.BILINEAR)
+                    if session is not None:
+                        small_no_bg = rembg.remove(small_img, session=session, post_process_mask=True)
+                    else:
+                        small_no_bg = rembg.remove(small_img, post_process_mask=True)
+                    # Extract alpha channel from small_no_bg and scale back to original size
+                    alpha_mask = small_no_bg.split()[-1].resize((w, h), Image.Resampling.BILINEAR)
+                    no_bg = img.copy()
+                    no_bg.putalpha(alpha_mask)
                 else:
-                    no_bg = rembg.remove(img, post_process_mask=True)
+                    if session is not None:
+                        no_bg = rembg.remove(img, session=session, post_process_mask=True)
+                    else:
+                        no_bg = rembg.remove(img, post_process_mask=True)
 
                 if new_bg_color.lower() == "transparent":
                     processed_img = no_bg

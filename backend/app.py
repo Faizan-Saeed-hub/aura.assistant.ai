@@ -137,7 +137,8 @@ async def chat_endpoint(req: ChatRequest):
             session_id=session_id,
             user_message=req.message,
             provider=target_provider,
-            model=req.model
+            model=req.model,
+            user_id=req.user_id
         )
         return result
     except Exception as e:
@@ -210,7 +211,10 @@ def delete_memory_endpoint(memory_id: int):
 # --- RAG Knowledge Base Endpoints ---
 
 @app.post("/api/rag/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    user_id: Optional[int] = Form(None)
+):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
 
@@ -227,6 +231,11 @@ async def upload_document(file: UploadFile = File(...)):
         # Split into chunks
         chunks = text_chunker.chunk_document(doc_id, parsed_pages)
         
+        # Tag chunks with user_id for strict isolated retrieval
+        for c in chunks:
+            c["user_id"] = user_id
+            c["filename"] = clean_name
+
         # Add to vector store
         vector_store.add_chunks(chunks)
 
@@ -235,8 +244,8 @@ async def upload_document(file: UploadFile = File(...)):
         now = datetime.now().isoformat()
         conn = get_connection()
         conn.execute(
-            "INSERT INTO documents (id, filename, file_type, chunk_count, file_path, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (doc_id, clean_name, save_path.suffix.lower(), len(chunks), str(save_path), now)
+            "INSERT INTO documents (id, filename, file_type, chunk_count, file_path, uploaded_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (doc_id, clean_name, save_path.suffix.lower(), len(chunks), str(save_path), now, user_id)
         )
         conn.commit()
         conn.close()
@@ -245,7 +254,8 @@ async def upload_document(file: UploadFile = File(...)):
             "status": "indexed",
             "doc_id": doc_id,
             "filename": clean_name,
-            "chunk_count": len(chunks)
+            "chunk_count": len(chunks),
+            "user_id": user_id
         }
     except Exception as e:
         if save_path.exists():
@@ -253,16 +263,23 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
 
 @app.get("/api/rag/documents")
-def list_documents():
+def list_documents(user_id: Optional[int] = None):
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM documents ORDER BY uploaded_at DESC").fetchall()
+    if user_id is not None:
+        rows = conn.execute("SELECT * FROM documents WHERE user_id = ? ORDER BY uploaded_at DESC", (user_id,)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM documents WHERE user_id IS NULL ORDER BY uploaded_at DESC").fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 @app.delete("/api/rag/documents/{doc_id}")
-def delete_document(doc_id: str):
+def delete_document(doc_id: str, user_id: Optional[int] = None):
     conn = get_connection()
-    row = conn.execute("SELECT file_path FROM documents WHERE id = ?", (doc_id,)).fetchone()
+    if user_id is not None:
+        row = conn.execute("SELECT file_path FROM documents WHERE id = ? AND (user_id = ? OR user_id IS NULL)", (doc_id, user_id)).fetchone()
+    else:
+        row = conn.execute("SELECT file_path FROM documents WHERE id = ?", (doc_id,)).fetchone()
+
     if row:
         fpath = Path(row["file_path"])
         if fpath.exists():
@@ -270,8 +287,8 @@ def delete_document(doc_id: str):
                 fpath.unlink()
             except Exception:
                 pass
-    conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
-    conn.commit()
+        conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+        conn.commit()
     conn.close()
     
     # Remove from vector store
@@ -574,6 +591,7 @@ class UserProfileUpdateRequest(BaseModel):
     role: Optional[str] = "Personal AI User"
     bio: Optional[str] = ""
     avatar_url: Optional[str] = None
+    user_id: Optional[int] = None
 
 @app.get("/api/user/profile")
 def get_profile():
@@ -670,7 +688,7 @@ def auth_status(user_id: Optional[int] = None):
 def update_profile(req: UserProfileUpdateRequest):
     import sqlite3
     curr = get_active_user()
-    user_id = curr.get("id", 1)
+    user_id = req.user_id if req.user_id else curr.get("id", 1)
     try:
         user = update_user_profile(
             user_id=user_id,

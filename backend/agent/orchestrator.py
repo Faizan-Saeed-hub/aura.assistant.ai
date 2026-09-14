@@ -18,13 +18,21 @@ class AgentOrchestrator:
         session_id: str,
         user_message: str,
         provider: Optional[str] = None,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        user_id: Optional[int] = None
     ) -> Dict[str, Any]:
         # 1. Save user message to short-term history
         conversation_manager.append_message(session_id, "user", user_message)
 
-        # Retrieve active user profile early for context & cloud sync
-        active_user = get_active_user()
+        # Retrieve user profile for context & cloud sync
+        if user_id:
+            conn = get_connection()
+            u_row = conn.execute("SELECT id, name, email, gender, role, bio FROM users WHERE id = ?", (user_id,)).fetchone()
+            conn.close()
+            active_user = dict(u_row) if u_row else get_active_user()
+        else:
+            active_user = get_active_user()
+
         user_name = active_user.get("name", "User")
         user_email = active_user.get("email", "")
         user_role = active_user.get("role", "Personal AI User")
@@ -38,14 +46,6 @@ class AgentOrchestrator:
 
         # 2. Retrieve conversation history
         history = conversation_manager.get_context(session_id)
-
-        # 3. Retrieve active user profile (Identity)
-        active_user = get_active_user()
-        user_name = active_user.get("name", "User")
-        user_email = active_user.get("email", "")
-        user_role = active_user.get("role", "Personal AI User")
-        user_bio = active_user.get("bio", "")
-        user_gender = active_user.get("gender", "male")
 
         user_identity_context = (
             f"### Active User Profile (Your Owner & Creator):\n"
@@ -64,8 +64,8 @@ class AgentOrchestrator:
         # 4. Retrieve long-term memory
         memory_context = long_term_memory.format_for_prompt()
 
-        # 5. Perform RAG retrieval for relevant document chunks (require at least 25% match)
-        rag_results = vector_store.search(user_message, top_k=config.TOP_K_RETRIEVAL, min_score=0.25)
+        # 5. Perform RAG retrieval for relevant document chunks strictly scoped to this user
+        rag_results = vector_store.search(user_message, top_k=config.TOP_K_RETRIEVAL, min_score=0.25, user_id=user_id)
         rag_context = ""
         citations = []
 

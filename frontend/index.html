@@ -537,13 +537,13 @@
                 <!-- Studio Tab Switcher: Framing vs Retouch vs Photo Background -->
                 <div class="studio-tab-bar">
                   <button type="button" class="studio-tab-btn active" id="tab-studio-framing-btn">
-                    <i class="fa-solid fa-crop-simple"></i> Framing & Sizing
+                    <i class="fa-solid fa-crop-simple"></i> Resize & Format
                   </button>
                   <button type="button" class="studio-tab-btn" id="tab-studio-retouch-btn">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ AI Face Glow & Retouch
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Enhance & Glow
                   </button>
                   <button type="button" class="studio-tab-btn" id="tab-studio-bg-btn">
-                    <i class="fa-solid fa-id-badge"></i> 🪄 Photo Background (Blue to White)
+                    <i class="fa-solid fa-id-badge"></i> Change Background
                   </button>
                 </div>
 
@@ -872,9 +872,9 @@
                   </div>
 
                   <!-- AI Human & Subject Detection Status Badge -->
-                  <div class="ai-bg-detection-badge" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px; margin: 12px 0 10px 0; font-size: 0.8rem; color: #60a5fa;">
-                    <i class="fa-solid fa-person-rays" style="font-size: 1rem; color: #38bdf8;"></i>
-                    <span><strong>AI Subject Detection:</strong> Isolates humans, hair & body before replacing backdrop</span>
+                  <div class="ai-bg-detection-badge" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px; margin: 12px 0 10px 0; font-size: 0.8rem; color: #1e40af;">
+                    <i class="fa-solid fa-person-rays" style="font-size: 1.1rem; color: #2563eb;"></i>
+                    <span><strong>Choose Mode:</strong> ⚡ <em>Direct Change</em> (Instant for solid/passport backdrops) or ✨ <em>AI Smart Matting</em> (Deep subject isolation)</span>
                   </div>
 
                   <!-- Edge Tolerance & Feathering Sliders -->
@@ -898,13 +898,16 @@
 
                   <!-- Action Buttons -->
                   <div class="bg-action-buttons">
-                    <button type="button" class="btn-accent-pill full-width" id="btn-apply-image-bg">
-                      <i class="fa-solid fa-wand-magic-sparkles"></i> Apply Background Color to Photo
+                    <button type="button" class="btn-accent-pill full-width" id="btn-apply-direct-bg" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; margin-bottom: 8px; justify-content: center;">
+                      <i class="fa-solid fa-bolt"></i> ⚡ Direct Change (Instant • Passport / Uniform BG)
                     </button>
-                    <button type="button" class="btn-secondary-pill full-width" id="btn-reset-image-bg" style="margin-top: 8px;">
+                    <button type="button" class="btn-accent-pill full-width" id="btn-apply-image-bg" style="background: linear-gradient(135deg, #2563eb, #7c3aed); color: #fff; justify-content: center;">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ AI Smart Matting (Deep Isolation)
+                    </button>
+                    <button type="button" class="btn-secondary-pill full-width" id="btn-reset-image-bg" style="margin-top: 8px; justify-content: center;">
                       <i class="fa-solid fa-rotate-left"></i> Revert to Original Photo
                     </button>
-                    <button type="button" class="btn-compare-retouch full-width" id="btn-compare-bg" style="margin-top: 8px;">
+                    <button type="button" class="btn-compare-retouch full-width" id="btn-compare-bg" style="margin-top: 8px; justify-content: center;">
                       <i class="fa-solid fa-eye"></i> Hold to View Original Photo
                     </button>
                   </div>
@@ -1249,7 +1252,7 @@
               </a>
             </div>
             <input type="password" id="setting-gemini-key" class="clean-input full-width" placeholder="AQ.Ab8RN... or AIzaSy..." />
-            <span class="hint-text" id="gemini-status-hint">Configured</span>
+            <span class="hint-text" id="gemini-status-hint">Not configured</span>
 
             <label for="setting-gemini-model" style="margin-top: 8px; font-size: 0.8rem;">Gemini Free Model</label>
             <select id="setting-gemini-model" class="clean-select full-width">
@@ -1484,10 +1487,13 @@
 
   <!-- ==========================================================
        WELCOME AUTHENTICATION GATEWAY (INITIAL VISIT PROMPT)
-       Options: 1. Sign In | 2. Create Account | 3. Continue as Guest
+       Clean Light Theme: Direct Sign In with Create Account and Guest links
        ========================================================== -->
   <div class="welcome-gate-overlay" id="welcome-gate-overlay">
     <div class="welcome-gate-card">
+      <button type="button" class="gate-close-btn" id="gate-close-btn" title="Continue as Guest">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
       
       <!-- Brand Header -->
       <div class="gate-header">
@@ -1495,74 +1501,14 @@
           <i class="fa-solid fa-wand-magic-sparkles"></i>
           <span>Aura AI Personal Assistant</span>
         </div>
-        <h1 class="gate-title" id="gate-main-heading">Get Started with Aura</h1>
+        <h1 class="gate-title" id="gate-main-heading">Sign In to Aura</h1>
         <p class="gate-subtitle" id="gate-main-subheading">
-          Your personal intelligence suite with long-term memory, voice interaction, document intelligence, and multi-model AI.
+          Enter your email and password below or jump straight in as a guest.
         </p>
       </div>
 
-      <!-- VIEW 1: THE 3 CORE CHOICES -->
-      <div id="gate-view-choices">
-        <div class="gate-choices-grid">
-          
-          <!-- Choice 1: Sign In -->
-          <div class="gate-choice-card" id="gate-card-signin" role="button" tabindex="0">
-            <span class="gate-card-pill pill-neutral">Existing User</span>
-            <div class="gate-choice-icon icon-signin">
-              <i class="fa-solid fa-arrow-right-to-bracket"></i>
-            </div>
-            <h3 class="gate-choice-title">Sign In</h3>
-            <p class="gate-choice-desc">
-              Access your personal chats, memory vault, saved documents, and unlock Google Gemini 2.5 Flash & OpenRouter.
-            </p>
-            <button type="button" class="gate-choice-btn btn-card-signin">
-              <span>Sign In to Account</span>
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-          </div>
-
-          <!-- Choice 2: Create Account (Featured) -->
-          <div class="gate-choice-card featured" id="gate-card-signup" role="button" tabindex="0">
-            <span class="gate-card-pill pill-primary">Recommended</span>
-            <div class="gate-choice-icon icon-signup">
-              <i class="fa-solid fa-user-plus"></i>
-            </div>
-            <h3 class="gate-choice-title">Create Account</h3>
-            <p class="gate-choice-desc">
-              Set up your profile, customize avatar, enable Supabase cloud sync, and get full access to advanced AI models.
-            </p>
-            <button type="button" class="gate-choice-btn btn-card-signup">
-              <span>Create Free Account</span>
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-          </div>
-
-          <!-- Choice 3: Continue as Guest -->
-          <div class="gate-choice-card" id="gate-card-guest" role="button" tabindex="0">
-            <span class="gate-card-pill pill-emerald">Instant Free</span>
-            <div class="gate-choice-icon icon-guest">
-              <i class="fa-solid fa-bolt"></i>
-            </div>
-            <h3 class="gate-choice-title">Continue as Guest</h3>
-            <p class="gate-choice-desc">
-              Jump straight into conversations without signing up. Unlimited, lightning-fast chat powered by Groq Compound Mini.
-            </p>
-            <button type="button" class="gate-choice-btn btn-card-guest">
-              <span>Start as Guest</span>
-              <i class="fa-solid fa-arrow-right"></i>
-            </button>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- VIEW 2: SIGN IN FORM (Hidden Initially) -->
-      <div id="gate-view-signin" class="gate-form-view" style="display: none;">
-        <div class="gate-form-header">
-          <h2 class="gate-form-title">Welcome Back</h2>
-          <p class="gate-form-subtitle">Enter your email and password to log in to your account.</p>
-        </div>
-
+      <!-- VIEW 1: SIGN IN FORM (Default View) -->
+      <div id="gate-view-signin" class="gate-form-view">
         <form id="gate-form-login-element">
           <div class="gate-input-group">
             <label for="gate-login-email"><i class="fa-solid fa-envelope"></i> Email Address</label>
@@ -1574,39 +1520,38 @@
             <input type="password" id="gate-login-password" class="gate-input" placeholder="••••••••" required />
           </div>
 
-          <div class="gate-actions-row">
-            <button type="button" class="btn-gate-back" id="btn-gate-back-from-signin">
-              <i class="fa-solid fa-arrow-left"></i> Back
-            </button>
-            <button type="submit" class="btn-gate-submit" id="btn-gate-submit-login">
-              <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
-            </button>
+          <button type="submit" class="btn-gate-submit full-width" id="btn-gate-submit-login">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Account
+          </button>
+
+          <div class="gate-divider">
+            <span>or</span>
           </div>
 
+          <button type="button" class="btn-gate-guest full-width" id="gate-card-guest">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Continue as Guest (Instant Free)</span>
+          </button>
+
           <div class="gate-switch-link">
-            Don't have an account yet? 
-            <button type="button" id="btn-gate-switch-to-signup">Create one now</button>
+            Don't have an account? 
+            <button type="button" id="btn-gate-switch-to-signup">Create New Account</button>
           </div>
         </form>
       </div>
 
-      <!-- VIEW 3: CREATE ACCOUNT FORM (Hidden Initially) -->
+      <!-- VIEW 2: CREATE ACCOUNT FORM (Toggled via Create New Account) -->
       <div id="gate-view-signup" class="gate-form-view" style="display: none;">
-        <div class="gate-form-header">
-          <h2 class="gate-form-title">Create Free Account</h2>
-          <p class="gate-form-subtitle">Unlock personalized AI, Google Gemini 2.5 Flash, and Cloud Sync.</p>
-        </div>
-
         <form id="gate-form-signup-element">
           <!-- Gender selection for auto avatar -->
           <div class="gate-input-group">
             <label>Gender (Selects Default Avatar)</label>
             <div class="gender-radio-group" style="display: flex; gap: 10px; margin-top: 4px;">
-              <label class="gender-radio-pill active" id="gate-pill-male" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(99,102,241,0.2); color: #fff;">
+              <label class="gender-radio-pill active" id="gate-pill-male" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; border: 1px solid #2563eb; background: #eff6ff; color: #1e40af;">
                 <input type="radio" name="gate-reg-gender" value="male" checked style="display: none;" />
                 <i class="fa-solid fa-mars"></i> Male
               </label>
-              <label class="gender-radio-pill" id="gate-pill-female" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(30,41,59,0.5); color: #cbd5e1;">
+              <label class="gender-radio-pill" id="gate-pill-female" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b;">
                 <input type="radio" name="gate-reg-gender" value="female" style="display: none;" />
                 <i class="fa-solid fa-venus"></i> Female
               </label>
@@ -1633,14 +1578,18 @@
             <input type="text" id="gate-reg-role" class="gate-input" placeholder="e.g. AI Engineer, Designer, Student" />
           </div>
 
-          <div class="gate-actions-row">
-            <button type="button" class="btn-gate-back" id="btn-gate-back-from-signup">
-              <i class="fa-solid fa-arrow-left"></i> Back
-            </button>
-            <button type="submit" class="btn-gate-submit" id="btn-gate-submit-signup">
-              <i class="fa-solid fa-user-plus"></i> Create Account
-            </button>
+          <button type="submit" class="btn-gate-submit full-width" id="btn-gate-submit-signup">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+          </button>
+
+          <div class="gate-divider">
+            <span>or</span>
           </div>
+
+          <button type="button" class="btn-gate-guest full-width" id="gate-guest-from-signup">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Continue as Guest</span>
+          </button>
 
           <div class="gate-switch-link">
             Already have an account? 

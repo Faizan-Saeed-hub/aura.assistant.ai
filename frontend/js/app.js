@@ -232,6 +232,7 @@ function bindEvents() {
     });
   });
 
+  let lastUploadedAvatarUrl = "";
   const editUploadBtn = document.getElementById("edit-avatar-upload-btn");
   const editFileInput = document.getElementById("edit-avatar-file-input");
   if (editUploadBtn && editFileInput) {
@@ -241,6 +242,7 @@ function bindEvents() {
         const file = e.target.files[0];
         const uploadedUrl = await uploadAvatarFile(file);
         if (uploadedUrl) {
+          lastUploadedAvatarUrl = uploadedUrl;
           const previewImg = document.getElementById("edit-avatar-preview");
           const avatarInput = document.getElementById("profile-avatar-input");
           if (previewImg) previewImg.src = uploadedUrl;
@@ -298,20 +300,38 @@ function bindEvents() {
       const name = document.getElementById("profile-name-input").value.trim();
       const email = document.getElementById("profile-email-input").value.trim();
       const role = document.getElementById("profile-role-input").value.trim();
-      const avatar = document.getElementById("profile-avatar-input").value.trim();
+      let avatar = document.getElementById("profile-avatar-input").value.trim();
       const bio = document.getElementById("profile-bio-input").value.trim();
       const genderChecked = document.querySelector('input[name="profile-gender"]:checked');
       const gender = genderChecked ? genderChecked.value : "male";
+
+      // If avatar field is left empty or cleared, use the uploaded photo if available
+      if (!avatar && lastUploadedAvatarUrl) {
+        avatar = lastUploadedAvatarUrl;
+      }
 
       try {
         const res = await fetch("/api/user/profile", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, gender, role, avatar_url: avatar || undefined, bio })
+          body: JSON.stringify({
+            user_id: currentUser ? currentUser.id : undefined,
+            name,
+            email,
+            gender,
+            role,
+            avatar_url: avatar || undefined,
+            bio
+          })
         });
         if (res.ok) {
           const data = await res.json();
+          if (currentUser) {
+            currentUser = { ...currentUser, ...data.user };
+            saveUserSession(currentUser);
+          }
           applyUserProfileToUI(data.user);
+          lastUploadedAvatarUrl = "";
           closeModal("profile-modal");
           showToast("✅ Profile updated successfully!");
         } else {
@@ -757,7 +777,18 @@ function bindEvents() {
       const openrouterModel = document.getElementById("setting-openrouter-model") ? document.getElementById("setting-openrouter-model").value : "";
       const geminiKey = document.getElementById("setting-gemini-key") ? document.getElementById("setting-gemini-key").value.trim() : "";
       const groqKey = document.getElementById("setting-groq-key") ? document.getElementById("setting-groq-key").value.trim() : "";
-      const groqModel = document.getElementById("setting-groq-model") ? document.getElementById("setting-groq-model").value : "";
+      if (currentUser) {
+        if (geminiKey) {
+          localStorage.setItem(`aura_user_gemini_key_${currentUser.id}`, geminiKey);
+        } else {
+          localStorage.removeItem(`aura_user_gemini_key_${currentUser.id}`);
+        }
+        if (openrouterKey) {
+          localStorage.setItem(`aura_user_openrouter_key_${currentUser.id}`, openrouterKey);
+        } else {
+          localStorage.removeItem(`aura_user_openrouter_key_${currentUser.id}`);
+        }
+      }
 
       await fetch("/api/settings", {
         method: "POST",
@@ -965,7 +996,8 @@ async function loadDashboardData() {
 
 async function loadDashboardFiles() {
   try {
-    const res = await fetch("/api/rag/documents");
+    const url = currentUser?.id ? `/api/rag/documents?user_id=${currentUser.id}` : "/api/rag/documents";
+    const res = await fetch(url);
     const docs = await res.json();
     const listEl = document.getElementById("dash-files-list");
     listEl.innerHTML = "";
@@ -1614,20 +1646,21 @@ if (typeof window !== "undefined" && window.speechSynthesis) {
   };
 }
 
-let accumulatedDictation = "";
+let voiceSessionInitialText = "";
+let voiceSessionFinalParts = [];
+let isVoiceSessionActive = false;
 
 function initVoiceRecognition() {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRec) return;
 
   speechRecognizer = new SpeechRec();
-  speechRecognizer.continuous = true; // Continuous listening to capture entire speech without cutting off
+  speechRecognizer.continuous = true;
   speechRecognizer.interimResults = true;
   speechRecognizer.lang = speechLang;
 
   const micBtn = document.getElementById("voice-input-btn");
   const inputEl = document.getElementById("user-input");
-  const langBadge = document.getElementById("voice-lang-badge");
   const langBtn = document.getElementById("voice-lang-toggle");
 
   updateVoiceLangUI();
@@ -1639,33 +1672,34 @@ function initVoiceRecognition() {
 
   speechRecognizer.onstart = () => {
     isRecording = true;
-    micBtn.classList.add("recording");
-    const langLabel = speechLang.startsWith("ur") ? "Urdu / Roman Urdu" : "English";
-    micBtn.title = `Listening (${langLabel})... Click mic again to stop`;
-    accumulatedDictation = inputEl.value ? inputEl.value.trim() + " " : "";
-    showToast(`🎤 Continuous listening (${langLabel})... Speak your full message.`);
+    if (micBtn) {
+      micBtn.classList.add("recording");
+      const langLabel = speechLang.startsWith("ur") ? "Urdu / Roman Urdu" : "English";
+      micBtn.title = `Listening (${langLabel})... Click mic again to stop`;
+    }
   };
 
   speechRecognizer.onend = () => {
-    if (isRecording) {
-      // Auto-restart continuous listening so speech is never cut off by pause
+    if (isVoiceSessionActive) {
+      // Auto-restart continuous listening so speech is never cut off by mobile pause
       try {
-        if (speechRecognizer) speechRecognizer.start();
-        return;
+        if (speechRecognizer) {
+          speechRecognizer.lang = speechLang;
+          speechRecognizer.start();
+          return;
+        }
       } catch (e) {}
     }
     isRecording = false;
-    micBtn.classList.remove("recording");
-    micBtn.title = "Voice Dictation";
-    if (inputEl.value.trim()) {
-      showToast("📝 Dictation captured! Click Send when you are ready.");
+    if (micBtn) {
+      micBtn.classList.remove("recording");
+      micBtn.title = "Voice Dictation";
     }
   };
 
   speechRecognizer.onerror = (e) => {
     if (e.error === "not-allowed") {
-      isRecording = false;
-      micBtn.classList.remove("recording");
+      stopVoiceRecording();
       showToast("⚠️ Microphone access denied. Please allow microphone permissions in your browser.");
     } else if (e.error !== "no-speech") {
       console.warn("Speech recognition notice:", e.error);
@@ -1673,26 +1707,31 @@ function initVoiceRecognition() {
   };
 
   speechRecognizer.onresult = (event) => {
-    if (!isRecording) return; // Discard trailing recognition events if stopped or sending
+    if (!isVoiceSessionActive) return;
     let interim = "";
-    let finalPart = "";
     for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const transcript = (event.results[i][0].transcript || "").trim();
+      if (!transcript) continue;
       if (event.results[i].isFinal) {
-        finalPart += event.results[i][0].transcript + " ";
+        // Prevent duplicate consecutive entries from mobile auto-restart cycles
+        if (voiceSessionFinalParts.length === 0 || voiceSessionFinalParts[voiceSessionFinalParts.length - 1] !== transcript) {
+          voiceSessionFinalParts.push(transcript);
+        }
       } else {
-        interim += event.results[i][0].transcript;
+        interim = transcript;
       }
     }
-    if (!isRecording) return;
-    if (finalPart) {
-      accumulatedDictation += finalPart;
-    }
-    const currentText = (accumulatedDictation + interim).trim();
-    if (currentText && isRecording) {
-      inputEl.value = currentText;
+
+    if (!isVoiceSessionActive) return;
+    const recognizedSoFar = voiceSessionFinalParts.join(" ") + (interim ? (voiceSessionFinalParts.length ? " " : "") + interim : "");
+    const fullText = voiceSessionInitialText
+      ? (voiceSessionInitialText + " " + recognizedSoFar).trim()
+      : recognizedSoFar.trim();
+
+    if (inputEl) {
+      inputEl.value = fullText;
       inputEl.dispatchEvent(new Event("input"));
     }
-    // STRICT REQUIREMENT: No auto-send! Dictation is written to text box, user sends manually.
   };
 }
 
@@ -1733,11 +1772,12 @@ function toggleGlobalSpeechLang() {
 }
 
 function stopVoiceRecording() {
-  isRecording = false; // Flag immediately false to block any trailing onresult callbacks
+  isVoiceSessionActive = false;
+  isRecording = false;
   if (speechRecognizer) {
     try {
       if (typeof speechRecognizer.abort === "function") {
-        speechRecognizer.abort(); // Immediately cancels without firing trailing onresult
+        speechRecognizer.abort();
       } else {
         speechRecognizer.stop();
       }
@@ -1750,7 +1790,8 @@ function stopVoiceRecording() {
     micBtn.classList.remove("recording");
     micBtn.title = "Voice Dictation";
   }
-  accumulatedDictation = "";
+  voiceSessionInitialText = "";
+  voiceSessionFinalParts = [];
 }
 
 function toggleVoiceRecording() {
@@ -1761,13 +1802,19 @@ function toggleVoiceRecording() {
     showToast("⚠️ Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
     return;
   }
-  if (isRecording) {
+  if (isRecording || isVoiceSessionActive) {
     stopVoiceRecording();
     showToast("⏹️ Voice input stopped.");
   } else {
     try {
+      const inputEl = document.getElementById("user-input");
+      voiceSessionInitialText = inputEl ? inputEl.value.trim() : "";
+      voiceSessionFinalParts = [];
+      isVoiceSessionActive = true;
       if (speechRecognizer) speechRecognizer.lang = speechLang;
       speechRecognizer.start();
+      const langLabel = speechLang.startsWith("ur") ? "Urdu / Roman Urdu" : "English";
+      showToast(`🎤 Listening (${langLabel})... Speak clearly.`);
     } catch (e) {
       console.warn("Speech start exception:", e);
     }
@@ -1834,6 +1881,9 @@ async function uploadFile(file) {
   
   const formData = new FormData();
   formData.append("file", file);
+  if (currentUser && currentUser.id) {
+    formData.append("user_id", currentUser.id);
+  }
 
   try {
     const res = await fetch("/api/rag/upload", {
@@ -1863,7 +1913,8 @@ async function uploadFile(file) {
 }
 
 async function loadRagDocuments() {
-  const res = await fetch("/api/rag/documents");
+  const url = currentUser?.id ? `/api/rag/documents?user_id=${currentUser.id}` : "/api/rag/documents";
+  const res = await fetch(url);
   const docs = await res.json();
   const tbody = document.getElementById("rag-docs-tbody");
   document.getElementById("rag-doc-count").textContent = docs.length;
@@ -1888,7 +1939,8 @@ async function loadRagDocuments() {
       </td>
     `;
     tr.querySelector(".action-btn-del").addEventListener("click", async () => {
-      await fetch(`/api/rag/documents/${d.id}`, { method: "DELETE" });
+      const delUrl = currentUser?.id ? `/api/rag/documents/${d.id}?user_id=${currentUser.id}` : `/api/rag/documents/${d.id}`;
+      await fetch(delUrl, { method: "DELETE" });
       loadRagDocuments();
       loadDashboardFiles();
     });
@@ -2002,23 +2054,45 @@ async function loadSettings() {
     badge.textContent = provName;
   }
 
-  const setConfiguredBadge = (elementId, isConfigured) => {
+  const setConfiguredBadge = (elementId, isConfigured, text = null) => {
     const el = document.getElementById(elementId);
     if (!el) return;
     if (isConfigured) {
-      el.textContent = "Configured";
+      el.textContent = text || "Configured";
       el.style.color = "#059669";
       el.style.fontWeight = "600";
     } else {
-      el.textContent = "Not configured";
+      el.textContent = text || "Not configured";
       el.style.color = "#94a3b8";
       el.style.fontWeight = "400";
     }
   };
 
-  setConfiguredBadge("openrouter-status-hint", s.openrouter_configured);
-  setConfiguredBadge("gemini-status-hint", s.gemini_configured);
-  setConfiguredBadge("groq-status-hint", s.groq_configured);
+  // Groq is free and active by default
+  setConfiguredBadge("groq-status-hint", s.groq_configured, "Active & Verified Free");
+
+  if (!currentUser) {
+    // Guest: must show as not configured
+    setConfiguredBadge("gemini-status-hint", false, "Not configured (Sign in to configure)");
+    setConfiguredBadge("openrouter-status-hint", false, "Not configured (Sign in to configure)");
+  } else {
+    // User account: check if they have personal key stored or entered
+    const userGeminiKey = localStorage.getItem(`aura_user_gemini_key_${currentUser.id}`) || "";
+    const geminiInput = document.getElementById("setting-gemini-key");
+    if (geminiInput && userGeminiKey && !geminiInput.value) {
+      geminiInput.value = userGeminiKey;
+    }
+    const hasGemini = Boolean(userGeminiKey || (geminiInput && geminiInput.value.trim()));
+    setConfiguredBadge("gemini-status-hint", hasGemini, hasGemini ? "Configured (Personal Key)" : "Not configured (Enter your free key)");
+
+    const userOpenRouterKey = localStorage.getItem(`aura_user_openrouter_key_${currentUser.id}`) || "";
+    const orInput = document.getElementById("setting-openrouter-key");
+    if (orInput && userOpenRouterKey && !orInput.value) {
+      orInput.value = userOpenRouterKey;
+    }
+    const hasOpenRouter = Boolean(userOpenRouterKey || (orInput && orInput.value.trim()));
+    setConfiguredBadge("openrouter-status-hint", hasOpenRouter, hasOpenRouter ? "Configured (Personal Key)" : "Not configured (Enter your free key)");
+  }
 
   const openrouterModelEl = document.getElementById("setting-openrouter-model");
   if (openrouterModelEl && s.openrouter_model) {
@@ -2040,6 +2114,9 @@ function saveUserSession(user) {
     localStorage.setItem("aura_current_user", JSON.stringify(user));
     localStorage.setItem("aura_auth_timestamp", Date.now().toString());
   } catch (e) {}
+  loadRagDocuments();
+  loadDashboardFiles();
+  loadChatSessions();
 }
 
 function clearUserSession() {
@@ -2049,6 +2126,9 @@ function clearUserSession() {
     localStorage.removeItem("aura_auth_timestamp");
     sessionStorage.removeItem("aura_guest_dismissed");
   } catch (e) {}
+  loadRagDocuments();
+  loadDashboardFiles();
+  loadChatSessions();
 }
 
 function isUserSessionExpired() {
@@ -2150,31 +2230,26 @@ function openLoginModal(message) {
 
 // --- Welcome Authentication Gateway Controller ---
 function showGateView(view) {
-  const viewChoices = document.getElementById("gate-view-choices");
   const viewSignin = document.getElementById("gate-view-signin");
   const viewSignup = document.getElementById("gate-view-signup");
   const heading = document.getElementById("gate-main-heading");
   const subheading = document.getElementById("gate-main-subheading");
 
-  if (viewChoices) viewChoices.style.display = view === "choices" ? "block" : "none";
-  if (viewSignin) viewSignin.style.display = view === "signin" ? "block" : "none";
-  if (viewSignup) viewSignup.style.display = view === "signup" ? "block" : "none";
-
-  if (heading && subheading) {
-    if (view === "choices") {
-      heading.textContent = "Get Started with Aura";
-      subheading.textContent = "Your personal intelligence suite with long-term memory, voice interaction, document intelligence, and multi-model AI.";
-    } else if (view === "signin") {
-      heading.textContent = "Sign In to Aura";
-      subheading.textContent = "Log in to access your personal dashboard, Google Gemini 2.5 Flash, and cloud memory.";
-    } else if (view === "signup") {
-      heading.textContent = "Create Free Account";
-      subheading.textContent = "Join Aura to unlock multi-model intelligence, custom avatars, and cross-device synchronization.";
-    }
+  if (view === "signup") {
+    if (viewSignin) viewSignin.style.display = "none";
+    if (viewSignup) viewSignup.style.display = "block";
+    if (heading) heading.textContent = "Create Free Account";
+    if (subheading) subheading.textContent = "Join Aura to unlock multi-model intelligence, custom avatars, and cross-device synchronization.";
+  } else {
+    // Default to Sign In
+    if (viewSignin) viewSignin.style.display = "block";
+    if (viewSignup) viewSignup.style.display = "none";
+    if (heading) heading.textContent = "Sign In to Aura";
+    if (subheading) subheading.textContent = "Enter your email and password below or jump straight in as a guest.";
   }
 }
 
-function showWelcomeGateway(view = "choices") {
+function showWelcomeGateway(view = "signin") {
   const overlay = document.getElementById("welcome-gate-overlay");
   if (!overlay) return;
   showGateView(view);
@@ -2191,37 +2266,27 @@ function initWelcomeGateway() {
   const overlay = document.getElementById("welcome-gate-overlay");
   if (!overlay) return;
 
-  // Choice 1: Sign In
-  const cardSignin = document.getElementById("gate-card-signin");
-  if (cardSignin) {
-    cardSignin.addEventListener("click", () => showGateView("signin"));
-  }
+  // Guest buttons
+  const handleGuestEntry = () => {
+    sessionStorage.setItem("aura_guest_dismissed", "true");
+    hideWelcomeGateway();
+    applyGuestUserToUI();
+    showToast("⚡ Continuing as Guest! Groq Compound Mini is ready.");
+  };
 
-  // Choice 2: Create Account
-  const cardSignup = document.getElementById("gate-card-signup");
-  if (cardSignup) {
-    cardSignup.addEventListener("click", () => showGateView("signup"));
-  }
-
-  // Choice 3: Continue as Guest
   const cardGuest = document.getElementById("gate-card-guest");
   if (cardGuest) {
-    cardGuest.addEventListener("click", () => {
-      sessionStorage.setItem("aura_guest_dismissed", "true");
-      hideWelcomeGateway();
-      applyGuestUserToUI();
-      showToast("⚡ Continuing as Guest! Groq Compound Mini is ready.");
-    });
+    cardGuest.addEventListener("click", handleGuestEntry);
   }
 
-  // Back buttons
-  const backFromSignin = document.getElementById("btn-gate-back-from-signin");
-  if (backFromSignin) {
-    backFromSignin.addEventListener("click", () => showGateView("choices"));
+  const guestFromSignup = document.getElementById("gate-guest-from-signup");
+  if (guestFromSignup) {
+    guestFromSignup.addEventListener("click", handleGuestEntry);
   }
-  const backFromSignup = document.getElementById("btn-gate-back-from-signup");
-  if (backFromSignup) {
-    backFromSignup.addEventListener("click", () => showGateView("choices"));
+
+  const closeBtn = document.getElementById("gate-close-btn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", handleGuestEntry);
   }
 
   // Switch between Signin and Signup inside gate
@@ -2234,31 +2299,31 @@ function initWelcomeGateway() {
     switchSignin.addEventListener("click", () => showGateView("signin"));
   }
 
-  // Gender selection pills inside gate signup
+  // Gender selection pills inside gate signup (Light Theme)
   const pillMale = document.getElementById("gate-pill-male");
   const pillFemale = document.getElementById("gate-pill-female");
   if (pillMale && pillFemale) {
     pillMale.addEventListener("click", () => {
       pillMale.classList.add("active");
       pillFemale.classList.remove("active");
-      pillMale.style.background = "rgba(99,102,241,0.25)";
-      pillMale.style.borderColor = "#6366f1";
-      pillMale.style.color = "#ffffff";
-      pillFemale.style.background = "rgba(30,41,59,0.5)";
-      pillFemale.style.borderColor = "rgba(255,255,255,0.15)";
-      pillFemale.style.color = "#cbd5e1";
+      pillMale.style.background = "#eff6ff";
+      pillMale.style.borderColor = "#2563eb";
+      pillMale.style.color = "#1e40af";
+      pillFemale.style.background = "#f8fafc";
+      pillFemale.style.borderColor = "#cbd5e1";
+      pillFemale.style.color = "#64748b";
       const rad = pillMale.querySelector('input[type="radio"]');
       if (rad) rad.checked = true;
     });
     pillFemale.addEventListener("click", () => {
       pillFemale.classList.add("active");
       pillMale.classList.remove("active");
-      pillFemale.style.background = "rgba(99,102,241,0.25)";
-      pillFemale.style.borderColor = "#6366f1";
-      pillFemale.style.color = "#ffffff";
-      pillMale.style.background = "rgba(30,41,59,0.5)";
-      pillMale.style.borderColor = "rgba(255,255,255,0.15)";
-      pillMale.style.color = "#cbd5e1";
+      pillFemale.style.background = "#eff6ff";
+      pillFemale.style.borderColor = "#2563eb";
+      pillFemale.style.color = "#1e40af";
+      pillMale.style.background = "#f8fafc";
+      pillMale.style.borderColor = "#cbd5e1";
+      pillMale.style.color = "#64748b";
       const rad = pillFemale.querySelector('input[type="radio"]');
       if (rad) rad.checked = true;
     });
@@ -3630,9 +3695,14 @@ function initImageStudio() {
     });
   }
 
+  const btnApplyDirect = document.getElementById("btn-apply-direct-bg");
+  if (btnApplyDirect) {
+    btnApplyDirect.addEventListener("click", () => applyImageBackgroundChange(false));
+  }
+
   const btnApplyBg = document.getElementById("btn-apply-image-bg");
   if (btnApplyBg) {
-    btnApplyBg.addEventListener("click", applyImageBackgroundChange);
+    btnApplyBg.addEventListener("click", () => applyImageBackgroundChange(true));
   }
 
   const btnResetBg = document.getElementById("btn-reset-image-bg");
@@ -3713,18 +3783,24 @@ function autoDetectPhotoBgColor() {
   }
 }
 
-async function applyImageBackgroundChange() {
+async function applyImageBackgroundChange(useAi = true) {
   const src = studioOriginalImage || studioImage;
   if (!src) {
     showToast("⚠️ Please upload a photo first!");
     return;
   }
 
-  const applyBtn = document.getElementById("btn-apply-image-bg");
-  const originalText = applyBtn ? applyBtn.innerHTML : "";
-  if (applyBtn) {
-    applyBtn.disabled = true;
-    applyBtn.innerHTML = '<i class="fa-solid fa-person-rays fa-beat"></i> AI Detecting Subject & Isolating BG...';
+  const directBtn = document.getElementById("btn-apply-direct-bg");
+  const aiBtn = document.getElementById("btn-apply-image-bg");
+  const activeBtn = useAi ? aiBtn : directBtn;
+  const originalDirectHtml = directBtn ? directBtn.innerHTML : "";
+  const originalAiHtml = aiBtn ? aiBtn.innerHTML : "";
+
+  if (activeBtn) {
+    activeBtn.disabled = true;
+    activeBtn.innerHTML = useAi
+      ? '<i class="fa-solid fa-person-rays fa-beat"></i> AI Detecting Subject & Isolating BG...'
+      : '<i class="fa-solid fa-bolt fa-beat"></i> Applying Instant Direct Change...';
   }
 
   try {
@@ -3746,7 +3822,7 @@ async function applyImageBackgroundChange() {
         target_bg_color: passportTargetBgColor,
         tolerance: passportTolerance,
         feather: passportFeather,
-        use_ai: true
+        use_ai: useAi
       })
     });
 
@@ -3764,7 +3840,7 @@ async function applyImageBackgroundChange() {
           if (b.getAttribute("data-color") === passportNewBgColor) b.classList.add("active");
           else b.classList.remove("active");
         });
-        showToast(`✅ Photo background changed to ${passportNewBgColor === "transparent" ? "Transparent" : (passportNewBgColor === "#ffffff" ? "Professional White" : passportNewBgColor)}!`);
+        showToast(`✅ Background changed to ${passportNewBgColor === "transparent" ? "Transparent" : (passportNewBgColor === "#ffffff" ? "White" : passportNewBgColor)} (${useAi ? "AI Matting" : "Direct Instant"})!`);
       };
       newImg.src = result.data_url || result.url;
     } else {
@@ -3774,9 +3850,13 @@ async function applyImageBackgroundChange() {
     console.error("Change bg error:", err);
     showToast("❌ Network error changing background.");
   } finally {
-    if (applyBtn) {
-      applyBtn.disabled = false;
-      applyBtn.innerHTML = originalText;
+    if (directBtn) {
+      directBtn.disabled = false;
+      directBtn.innerHTML = originalDirectHtml;
+    }
+    if (aiBtn) {
+      aiBtn.disabled = false;
+      aiBtn.innerHTML = originalAiHtml;
     }
   }
 }

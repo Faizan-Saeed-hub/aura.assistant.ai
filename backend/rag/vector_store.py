@@ -90,7 +90,7 @@ class VectorStore:
         self._build_vocab_and_idf()
         self.save()
 
-    def search(self, query: str, top_k: int = None, min_score: float = 0.15) -> List[Dict[str, Any]]:
+    def search(self, query: str, top_k: int = None, min_score: float = 0.15, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
         k = top_k or config.TOP_K_RETRIEVAL
         if not self.chunks or not self.vocab:
             return []
@@ -106,10 +106,17 @@ class VectorStore:
         top_indices = np.argsort(scores)[::-1]
         
         results = []
-        for idx in top_indices[:k]:
+        for idx in top_indices:
+            if len(results) >= k:
+                break
             score = float(scores[idx])
             if score >= min_score:
-                chunk_copy = dict(self.chunks[idx])
+                chunk = self.chunks[idx]
+                # If user_id is provided, only return chunks belonging to this user
+                chunk_uid = chunk.get("user_id")
+                if user_id is not None and chunk_uid is not None and int(chunk_uid) != int(user_id):
+                    continue
+                chunk_copy = dict(chunk)
                 chunk_copy["score"] = round(score, 4)
                 results.append(chunk_copy)
 
