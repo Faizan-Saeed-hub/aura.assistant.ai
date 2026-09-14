@@ -697,6 +697,14 @@ app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 def serve_index():
     return FileResponse(FRONTEND_DIR / "index.html")
 
+@app.get("/manifest.json")
+def serve_manifest():
+    return FileResponse(FRONTEND_DIR / "manifest.json", media_type="application/manifest+json")
+
+@app.get("/sw.js")
+def serve_service_worker():
+    return FileResponse(FRONTEND_DIR / "sw.js", media_type="application/javascript")
+
 # --- Super Admin Management Endpoints ---
 
 ADMIN_SUPER_EMAIL = "faizanbarvi786@gmail.com"

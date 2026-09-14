@@ -16,6 +16,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   initVoiceRecognition();
   initVoiceToggleUI();
   bindEvents();
+  initPwaInstaller();
+  initHistoryNavigation();
   initWelcomeGateway();
   await checkAuthStatus();
   loadSessions();
@@ -796,8 +798,61 @@ function closeModal(modalId) {
   document.getElementById(modalId).classList.remove("open");
 }
 
-function switchView(view) {
+// --- SPA History & Back-Button Protection ---
+function initHistoryNavigation() {
+  // Prime baseline history state so user starts at home
+  try {
+    history.replaceState({ aura_page: "dashboard" }, "", window.location.pathname);
+    // Push one guard state so back button doesn't exit the app
+    history.pushState({ aura_page: "dashboard" }, "", window.location.pathname);
+  } catch (e) {}
+
+  window.addEventListener("popstate", (e) => {
+    // 1. If any modal is open, close it and stay in the app
+    const openModals = document.querySelectorAll(".modal-card-wrap.open, .modal-overlay.open");
+    if (openModals && openModals.length > 0) {
+      openModals.forEach((m) => m.classList.remove("open"));
+      try {
+        history.pushState({ aura_page: activeView }, "", window.location.pathname);
+      } catch (err) {}
+      return;
+    }
+
+    // 2. If mobile sidebar is open, close it
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar && sidebar.classList.contains("mobile-open")) {
+      closeMobileSidebar();
+      try {
+        history.pushState({ aura_page: activeView }, "", window.location.pathname);
+      } catch (err) {}
+      return;
+    }
+
+    // 3. If in any subview (chat, email, image, tasks, etc.), return to Home Page!
+    if (activeView !== "dashboard") {
+      switchView("dashboard", false);
+      try {
+        history.pushState({ aura_page: "dashboard" }, "", window.location.pathname);
+      } catch (err) {}
+    } else {
+      // Already on Home Page - keep the user on Home Page and prevent app exit
+      try {
+        history.pushState({ aura_page: "dashboard" }, "", window.location.pathname);
+      } catch (err) {}
+      showToast("🏠 You are on the Home Page.");
+    }
+  });
+}
+
+function switchView(view, pushState = true) {
   closeMobileSidebar();
+  
+  if (pushState && activeView !== view) {
+    try {
+      history.pushState({ aura_page: view }, "", view === "dashboard" ? "/" : "#" + view);
+    } catch (e) {}
+  }
+  
   activeView = view;
   const dashEl = document.getElementById("dashboard-view");
   const chatEl = document.getElementById("chat-view");
@@ -842,6 +897,59 @@ function switchView(view) {
     if (omnibarEl) omnibarEl.style.display = "none";
     initImageStudio();
   }
+}
+
+// --- Progressive Web App (PWA) Installer & Service Worker ---
+let deferredInstallPrompt = null;
+
+function initPwaInstaller() {
+  // Register Service Worker for 3-dot browser menu installation
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js")
+        .then((reg) => {
+          console.log("PWA Service Worker registered:", reg.scope);
+        })
+        .catch((err) => {
+          console.warn("Service Worker registration error:", err);
+        });
+    });
+  }
+
+  const topInstallBtn = document.getElementById("btn-install-app-top");
+  const navInstallBtn = document.getElementById("nav-install-app-btn");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (topInstallBtn) topInstallBtn.style.display = "inline-flex";
+    if (navInstallBtn) navInstallBtn.style.display = "flex";
+  });
+
+  const handleInstallClick = () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then((choice) => {
+        if (choice.outcome === "accepted") {
+          showToast("🎉 Aura AI App installed successfully!");
+          if (topInstallBtn) topInstallBtn.style.display = "none";
+          if (navInstallBtn) navInstallBtn.style.display = "none";
+        }
+        deferredInstallPrompt = null;
+      });
+    } else {
+      showToast("To install, tap the 3 dots (⋮) in your browser and select 'Install app' or 'Add to Home screen'.");
+    }
+  };
+
+  if (topInstallBtn) topInstallBtn.addEventListener("click", handleInstallClick);
+  if (navInstallBtn) navInstallBtn.addEventListener("click", handleInstallClick);
+
+  window.addEventListener("appinstalled", () => {
+    showToast("✨ Welcome to Aura AI Standalone App!");
+    if (topInstallBtn) topInstallBtn.style.display = "none";
+    if (navInstallBtn) navInstallBtn.style.display = "none";
+  });
 }
 
 function initAutoResizeTextarea() {

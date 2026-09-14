@@ -10,9 +10,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Progressive Web App (PWA) Manifest & Icons -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Aura AI" />
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png" />
   <!-- Marked.js for fast Markdown formatting and image rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link rel="stylesheet" href="/static/css/style.css?v=3.0" />
+  <link rel="stylesheet" href="/static/css/style.css?v=3.1" />
 </head>
 <body>
   <!-- Top Category Tags (matching reference style) -->
@@ -54,6 +63,9 @@
       </div>
 
       <div class="window-header-actions">
+        <button class="win-btn-icon" id="btn-install-app-top" style="display: none;" title="Install Aura AI App (Standalone)">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+        </button>
         <button class="win-btn" id="voice-tts-toggle" title="Toggle Voice Output">
           <i class="fa-solid fa-volume-high"></i>
           <span>Voice: ON</span>
@@ -132,6 +144,10 @@
           <button class="nav-item" id="nav-memory-btn">
             <i class="fa-solid fa-brain"></i>
             <span>Memory Vault</span>
+          </button>
+          <button class="nav-item" id="nav-install-app-btn" style="display: none;" title="Install Aura App">
+            <i class="fa-solid fa-cloud-arrow-down text-indigo"></i>
+            <span>Install App</span>
           </button>
         </nav>
 
