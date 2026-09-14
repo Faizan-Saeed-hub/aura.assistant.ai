@@ -137,6 +137,30 @@ def init_db():
         WHERE email = 'faizan@workspace.ai' AND (avatar_url LIKE '%photo-1534528741775%' OR avatar_url IS NULL)
         """, (DEFAULT_MALE_AVATAR,))
     
+    # Ensure Super Admin account exists
+    admin_email = "faizanbarvi786@gmail.com"
+    admin_pass = "Faizan@786"
+    admin_name = "Faizan (Admin)"
+    now = datetime.now().isoformat()
+    admin_row = cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (admin_email.lower(),)).fetchone()
+    if admin_row:
+        cursor.execute("""
+        UPDATE users 
+        SET name = ?, role = 'admin', password_hash = ?
+        WHERE id = ?
+        """, (admin_name, f"hash_{admin_pass[:6]}", admin_row["id"]))
+    else:
+        cursor.execute("""
+        INSERT INTO users (name, email, password_hash, gender, role, avatar_url, bio, created_at)
+        VALUES (?, ?, ?, 'male', 'admin', ?, 'Super Administrator with full user management and system control.', ?)
+        """, (
+            admin_name,
+            admin_email,
+            f"hash_{admin_pass[:6]}",
+            DEFAULT_MALE_AVATAR,
+            now
+        ))
+    
     conn.commit()
     conn.close()
 
@@ -371,4 +395,39 @@ def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
             "created_at": d.get("created_at")
         }
     return None
+
+def get_all_users_for_admin() -> List[Dict[str, Any]]:
+    conn = get_connection()
+    rows = conn.execute("""
+    SELECT u.id, u.name, u.email, u.role, u.gender, u.avatar_url, u.bio, u.created_at,
+           COUNT(s.id) as session_count
+    FROM users u
+    LEFT JOIN sessions s ON s.user_id = u.id
+    GROUP BY u.id
+    ORDER BY u.id DESC
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def delete_user_by_admin(user_id: int) -> Dict[str, Any]:
+    conn = get_connection()
+    user = conn.execute("SELECT id, email, role FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        return {"success": False, "error": "User not found"}
+    
+    if user["email"].lower() == "faizanbarvi786@gmail.com":
+        conn.close()
+        return {"success": False, "error": "Protected account: Cannot delete Super Administrator"}
+    
+    # Clean up user's chat sessions and messages
+    sess_rows = conn.execute("SELECT id FROM sessions WHERE user_id = ?", (user_id,)).fetchall()
+    for s in sess_rows:
+        conn.execute("DELETE FROM messages WHERE session_id = ?", (s["id"],))
+    conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": f"User #{user_id} and all their data were permanently deleted"}
+
 

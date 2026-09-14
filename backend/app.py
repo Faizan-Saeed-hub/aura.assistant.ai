@@ -15,6 +15,7 @@ from backend.database import (
     init_db, create_session, get_all_sessions, get_session, delete_session,
     get_session_messages, get_setting, set_setting, get_connection,
     get_active_user, create_user_account, update_user_profile, authenticate_user,
+    get_all_users_for_admin, delete_user_by_admin,
     DEFAULT_MALE_AVATAR, DEFAULT_FEMALE_AVATAR
 )
 from backend.memory.long_term import long_term_memory
@@ -695,3 +696,72 @@ app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 @app.get("/")
 def serve_index():
     return FileResponse(FRONTEND_DIR / "index.html")
+
+# --- Super Admin Management Endpoints ---
+
+ADMIN_SUPER_EMAIL = "faizanbarvi786@gmail.com"
+ADMIN_SUPER_PASS = "Faizan@786"
+
+class AdminLoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/admin/login")
+def api_admin_login(req: AdminLoginRequest):
+    email_clean = req.email.strip().lower()
+    if email_clean == ADMIN_SUPER_EMAIL.lower() and req.password == ADMIN_SUPER_PASS:
+        user = authenticate_user(email_clean, req.password)
+        return {
+            "success": True,
+            "admin_token": "admin_auth_token_faizan_786",
+            "user": user or {
+                "id": 8,
+                "name": "Faizan (Admin)",
+                "email": ADMIN_SUPER_EMAIL,
+                "role": "admin",
+                "gender": "male"
+            },
+            "message": "Super Admin access authorized"
+        }
+    raise HTTPException(status_code=401, detail="Invalid admin credentials")
+
+@app.get("/api/admin/users")
+def api_admin_get_users(admin_token: Optional[str] = None):
+    users = get_all_users_for_admin()
+    conn = get_connection()
+    total_sessions = conn.execute("SELECT COUNT(*) as count FROM sessions").fetchone()["count"]
+    total_messages = conn.execute("SELECT COUNT(*) as count FROM messages").fetchone()["count"]
+    total_docs = conn.execute("SELECT COUNT(*) as count FROM documents").fetchone()["count"]
+    conn.close()
+
+    active_settings = get_settings()
+    return {
+        "success": True,
+        "users": users,
+        "stats": {
+            "total_users": len(users),
+            "total_sessions": total_sessions,
+            "total_messages": total_messages,
+            "total_documents": total_docs,
+            "active_provider": active_settings.get("active_provider", "groq"),
+            "active_model": active_settings.get("groq_model", "groq/compound-mini"),
+            "supabase_configured": supabase_auth.is_configured(),
+            "supabase_url": config.SUPABASE_URL or "Not Configured"
+        }
+    }
+
+@app.delete("/api/admin/users/{user_id}")
+def api_admin_delete_user(user_id: int, admin_token: Optional[str] = None):
+    res = delete_user_by_admin(user_id)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to delete user"))
+    return res
+
+@app.get("/admin")
+@app.get("/admin/")
+def serve_admin():
+    admin_file = FRONTEND_DIR / "admin.html"
+    if admin_file.exists():
+        return FileResponse(admin_file)
+    return FileResponse(FRONTEND_DIR / "index.html")
+
